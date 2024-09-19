@@ -9,6 +9,7 @@ const PhysicsSimulator = () => {
   const [isCreatingCircle, setIsCreatingCircle] = useState(false);
   const [isCreatingRectangle, setIsCreatingRectangle] = useState(false);
   const [isCreatingTriangle, setIsCreatingTriangle] = useState(false);
+  const [isLightning, setIsLightning] = useState(false);
 
   useEffect(() => {
     const Engine = Matter.Engine;
@@ -32,9 +33,8 @@ const PhysicsSimulator = () => {
 
     const ground = Bodies.rectangle(400, 590, 800, 20, { isStatic: true });
     
-    // Create dragon with increased mass
     const dragon = Bodies.circle(400, 300, 30, {
-      mass: 50, // Increased mass to make it much heavier
+      mass: 50,
       render: {
         sprite: {
           texture: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 72 72"><path fill="%23D22F27" d="M17.5 14.5s1.875 6.813 3 11c1.125 4.188 1.375 11.563 1.375 11.563L7 45.938s6.625-1.126 11.375-2.376c4.75-1.25 10.688-3.437 10.688-3.437s-1.438 5.438-2.438 9.313c-1 3.874-1.688 11.124-1.688 11.124l14.126-8.187s-.313 3.437-.313 5.687s.688 4.376.688 4.376l7.437-5.563s.125-3.062.125-5.187c0-2.126-.688-6.063-.688-6.063l14.126 8.187s-.687-7.25-1.687-11.124c-1-3.875-2.438-9.313-2.438-9.313s5.938 2.187 10.688 3.437C71.375 44.812 78 45.938 78 45.938l-14.875-8.875s.25-7.375 1.375-11.563c1.125-4.187 3-11 3-11L53.563 24.75s-3.938-4.563-6.938-6.563s-9.188-3.624-9.188-3.624s-6.187 1.624-9.187 3.624s-6.938 6.563-6.938 6.563L17.5 14.5z"/><path fill="%23EA5A47" d="M36.01 15.166c-1.509.415-4.506 1.17-7.073 2.959c-3.25 2.266-6.938 6.563-6.938 6.563L17.5 14.5s1.875 6.813 3 11c1.125 4.188 1.375 11.563 1.375 11.563L7 45.938s6.625-1.126 11.375-2.376c4.75-1.25 10.688-3.437 10.688-3.437s-1.438 5.438-2.438 9.313c-1 3.874-1.688 11.124-1.688 11.124l14.126-8.187s-.313 3.437-.313 5.687s.688 4.376.688 4.376l1.573-1.178V15.166z"/></svg>',
@@ -51,18 +51,23 @@ const PhysicsSimulator = () => {
     Engine.run(engine);
     Render.run(render);
 
-    // Add keyboard controls for the dragon
     window.addEventListener('keydown', handleKeyDown);
 
-    // Add automatic movement to the dragon
     const moveInterval = setInterval(() => {
-      const force = 0.001; // Reduced force due to increased mass
+      const force = 0.001;
       const randomDirection = Math.random() * Math.PI * 2;
       Matter.Body.applyForce(dragon, dragon.position, {
         x: Math.cos(randomDirection) * force,
         y: Math.sin(randomDirection) * force
       });
-    }, 100); // Apply force every 100ms
+    }, 100);
+
+    // Lightning effect
+    const lightningInterval = setInterval(() => {
+      if (Math.random() < 0.005) { // 0.5% chance every 100ms
+        triggerLightning();
+      }
+    }, 100);
 
     return () => {
       Render.stop(render);
@@ -74,6 +79,7 @@ const PhysicsSimulator = () => {
       render.textures = {};
       window.removeEventListener('keydown', handleKeyDown);
       clearInterval(moveInterval);
+      clearInterval(lightningInterval);
     };
   }, []);
 
@@ -81,7 +87,7 @@ const PhysicsSimulator = () => {
     const dragon = dragonRef.current;
     if (!dragon) return;
 
-    const force = 0.002; // Reduced force for better control due to increased mass
+    const force = 0.002;
     switch (event.key) {
       case 'ArrowUp':
         Matter.Body.applyForce(dragon, dragon.position, { x: 0, y: -force });
@@ -102,8 +108,8 @@ const PhysicsSimulator = () => {
     const World = Matter.World;
     const Bodies = Matter.Bodies;
 
-    const x = Math.random() * 800; // Random x position
-    const y = Math.random() * 300; // Random y position in the upper half
+    const x = Math.random() * 800;
+    const y = Math.random() * 300;
 
     let shape;
     switch (shapeType) {
@@ -129,7 +135,6 @@ const PhysicsSimulator = () => {
 
     World.add(engineRef.current.world, [shape]);
 
-    // Check for collisions
     Matter.Events.on(engineRef.current, 'collisionStart', (event) => {
       event.pairs.forEach((pair) => {
         const { bodyA, bodyB } = pair;
@@ -141,23 +146,50 @@ const PhysicsSimulator = () => {
     });
   };
 
+  const triggerLightning = () => {
+    setIsLightning(true);
+    const shapes = engineRef.current.world.bodies.filter(body => body.label !== 'dragon' && !body.isStatic);
+    shapes.forEach(shape => {
+      Matter.World.remove(engineRef.current.world, shape);
+    });
+    setTimeout(() => setIsLightning(false), 500);
+  };
+
   useEffect(() => {
     let intervalId;
     if (isCreatingCircle || isCreatingRectangle || isCreatingTriangle) {
       intervalId = setInterval(() => {
-        for (let i = 0; i < 5; i++) { // Create 5 shapes per interval
+        for (let i = 0; i < 5; i++) {
           if (isCreatingCircle) addShape('circle');
           if (isCreatingRectangle) addShape('rectangle');
           if (isCreatingTriangle) addShape('triangle');
         }
-      }, 50); // Reduced interval to 50ms for faster creation
+      }, 50);
     }
     return () => clearInterval(intervalId);
   }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle]);
 
   return (
     <div className="flex flex-col items-center">
-      <div ref={sceneRef} className="border border-gray-300 rounded-lg overflow-hidden" />
+      <div 
+        ref={sceneRef} 
+        className={`border border-gray-300 rounded-lg overflow-hidden ${isLightning ? 'bg-yellow-200' : ''}`} 
+        style={{ position: 'relative' }}
+      >
+        {isLightning && (
+          <div 
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(255, 255, 255, 0.8)',
+              zIndex: 10,
+            }}
+          />
+        )}
+      </div>
       <div className="mt-4 space-x-4">
         <Button
           onMouseDown={() => setIsCreatingCircle(true)}
