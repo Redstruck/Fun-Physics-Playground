@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import ParticleImage, { ParticleOptions } from 'react-particle-image';
+import ParticleImage from 'react-particle-image';
 
 const DragonFire = ({ dragonRef }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -19,7 +19,7 @@ const DragonFire = ({ dragonRef }) => {
     return () => clearInterval(interval);
   }, [dragonRef]);
 
-  const particleOptions: ParticleOptions = {
+  const particleOptions = {
     filter: ({ x, y, image }) => {
       const pixel = image.get(x, y);
       return pixel.b > 50;
