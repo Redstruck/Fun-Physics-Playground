@@ -40,7 +40,7 @@ const DragonFire = ({ dragonRef }) => {
   return (
     <div style={{ position: 'absolute', left: position.x - 30, top: position.y - 30, pointerEvents: 'none' }}>
       <ParticleImage
-        src={'/fire.png'}
+        src="/fire.png"
         width={60}
         height={60}
         scale={1}
