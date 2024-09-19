@@ -22,7 +22,7 @@ export const setupPhysics = (sceneRef, engineRef, dragonRef) => {
     }
   });
   
-  const dragonImage = 'https://images.unsplash.com/photo-1577493340887-b7bfff550145?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=100&q=80';
+  const dragonImage = '/dragon.png'; // Use a local image in the public folder
   const dragon = Matter.Bodies.circle(400, 300, 30, {
     mass: 50,
     render: {

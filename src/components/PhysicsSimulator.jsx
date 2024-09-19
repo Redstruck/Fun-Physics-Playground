@@ -11,32 +11,36 @@ const PhysicsSimulator = () => {
   const [isLightning, setIsLightning] = useState(false);
 
   useEffect(() => {
-    const { engine, dragon } = setupPhysics(sceneRef, engineRef, dragonRef);
+    const dragonImage = new Image();
+    dragonImage.src = '/dragon.png'; // Make sure to add a dragon.png image to your public folder
+    dragonImage.onload = () => {
+      const { engine, dragon } = setupPhysics(sceneRef, engineRef, dragonRef);
 
-    window.addEventListener('keydown', (e) => handleKeyDown(e, dragon));
+      window.addEventListener('keydown', (e) => handleKeyDown(e, dragon));
 
-    const moveInterval = setInterval(() => {
-      const force = 0.001;
-      const randomDirection = Math.random() * Math.PI * 2;
-      Matter.Body.applyForce(dragon, dragon.position, {
-        x: Math.cos(randomDirection) * force,
-        y: Math.sin(randomDirection) * force
-      });
-    }, 100);
+      const moveInterval = setInterval(() => {
+        const force = 0.001;
+        const randomDirection = Math.random() * Math.PI * 2;
+        Matter.Body.applyForce(dragon, dragon.position, {
+          x: Math.cos(randomDirection) * force,
+          y: Math.sin(randomDirection) * force
+        });
+      }, 100);
 
-    const lightningInterval = setInterval(() => {
-      if (Math.random() < 0.005) {
-        triggerLightning(engineRef.current, setIsLightning);
-      }
-    }, 100);
+      const lightningInterval = setInterval(() => {
+        if (Math.random() < 0.005) {
+          triggerLightning(engineRef.current, setIsLightning);
+        }
+      }, 100);
 
-    return () => {
-      Matter.Render.stop(engine.render);
-      Matter.World.clear(engine.world);
-      Matter.Engine.clear(engine);
-      window.removeEventListener('keydown', handleKeyDown);
-      clearInterval(moveInterval);
-      clearInterval(lightningInterval);
+      return () => {
+        Matter.Render.stop(engine.render);
+        Matter.World.clear(engine.world);
+        Matter.Engine.clear(engine);
+        window.removeEventListener('keydown', handleKeyDown);
+        clearInterval(moveInterval);
+        clearInterval(lightningInterval);
+      };
     };
   }, []);
 
