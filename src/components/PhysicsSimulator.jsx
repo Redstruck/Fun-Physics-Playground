@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
 import ShapeCreator from './ShapeCreator';
+import DragonFire from './DragonFire';
 import { setupPhysics, handleKeyDown, addShape, triggerLightning } from '../utils/physicsUtils';
 
 const PhysicsSimulator = () => {
@@ -12,11 +13,12 @@ const PhysicsSimulator = () => {
 
   useEffect(() => {
     const dragonImage = new Image();
-    dragonImage.src = '/dragon.png'; // Make sure to add a dragon.png image to your public folder
+    dragonImage.src = '/dragon.png';
     dragonImage.onload = () => {
       const { engine, dragon } = setupPhysics(sceneRef, engineRef, dragonRef);
 
-      window.addEventListener('keydown', (e) => handleKeyDown(e, dragon));
+      const handleKeyDownWrapper = (e) => handleKeyDown(e, dragon);
+      window.addEventListener('keydown', handleKeyDownWrapper);
 
       const moveInterval = setInterval(() => {
         const force = 0.001;
@@ -37,7 +39,7 @@ const PhysicsSimulator = () => {
         Matter.Render.stop(engine.render);
         Matter.World.clear(engine.world);
         Matter.Engine.clear(engine);
-        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keydown', handleKeyDownWrapper);
         clearInterval(moveInterval);
         clearInterval(lightningInterval);
       };
@@ -64,6 +66,7 @@ const PhysicsSimulator = () => {
             }}
           />
         )}
+        <DragonFire dragonRef={dragonRef} />
       </div>
       <ShapeCreator addShape={(type) => addShape(type, engineRef.current)} />
       <p className="mt-4 text-sm text-gray-600">Use arrow keys to control the dragon</p>

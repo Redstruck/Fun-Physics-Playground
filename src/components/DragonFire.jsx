@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import ParticleImage from 'react-particle-image';
+import { motion } from 'framer-motion';
 
 const DragonFire = ({ dragonRef }) => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -19,36 +19,42 @@ const DragonFire = ({ dragonRef }) => {
     return () => clearInterval(interval);
   }, [dragonRef]);
 
-  const particleOptions = {
-    filter: ({ x, y, image }) => {
-      const pixel = image.get(x, y);
-      return pixel.b > 50;
-    },
-    color: ({ x, y, image }) => {
-      const pixel = image.get(x, y);
-      return `rgb(${pixel.r}, ${pixel.g / 2}, 0)`;
-    },
-    radius: () => Math.random() * 1.5 + 0.5,
-    mass: () => 20,
-    friction: () => 0.15,
-    initialVelocity: () => ({
-      x: Math.random() * 4 - 2,
-      y: Math.random() * -3 - 1,
-    }),
-  };
-
   return (
-    <div style={{ position: 'absolute', left: position.x - 30, top: position.y - 30, pointerEvents: 'none' }}>
-      <ParticleImage
-        src="/fire.png"
-        width={60}
-        height={60}
-        scale={1}
-        entropy={5}
-        maxParticles={1000}
-        particleOptions={particleOptions}
-      />
-    </div>
+    <motion.div
+      style={{
+        position: 'absolute',
+        left: position.x,
+        top: position.y,
+        width: 0,
+        height: 0,
+        pointerEvents: 'none',
+      }}
+    >
+      {[...Array(20)].map((_, index) => (
+        <motion.div
+          key={index}
+          style={{
+            position: 'absolute',
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: `radial-gradient(circle, rgba(255,160,0,1) 0%, rgba(255,69,0,1) 100%)`,
+          }}
+          animate={{
+            x: Math.random() * 40 - 20,
+            y: Math.random() * -50 - 20,
+            opacity: [1, 0],
+            scale: [0, 1.5],
+          }}
+          transition={{
+            duration: 0.5,
+            repeat: Infinity,
+            repeatType: 'loop',
+            delay: index * 0.02,
+          }}
+        />
+      ))}
+    </motion.div>
   );
 };
 
