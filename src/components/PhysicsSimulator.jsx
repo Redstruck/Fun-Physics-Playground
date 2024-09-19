@@ -1,57 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
+import DragonFire from './DragonFire';
+import ShapeCreator from './ShapeCreator';
+import { setupPhysics, handleKeyDown, addShape, triggerLightning } from '../utils/physicsUtils';
 
 const PhysicsSimulator = () => {
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
   const dragonRef = useRef(null);
-  const [isCreatingCircle, setIsCreatingCircle] = useState(false);
-  const [isCreatingRectangle, setIsCreatingRectangle] = useState(false);
-  const [isCreatingTriangle, setIsCreatingTriangle] = useState(false);
   const [isLightning, setIsLightning] = useState(false);
 
   useEffect(() => {
-    const Engine = Matter.Engine;
-    const Render = Matter.Render;
-    const World = Matter.World;
-    const Bodies = Matter.Bodies;
+    const { engine, dragon } = setupPhysics(sceneRef, engineRef, dragonRef);
 
-    const engine = Engine.create();
-    engineRef.current = engine;
-
-    const render = Render.create({
-      element: sceneRef.current,
-      engine: engine,
-      options: {
-        width: 800,
-        height: 600,
-        wireframes: false,
-        background: '#f4f4f4'
-      }
-    });
-
-    const ground = Bodies.rectangle(400, 590, 800, 20, { isStatic: true });
-    
-    const dragon = Bodies.circle(400, 300, 30, {
-      mass: 50,
-      render: {
-        sprite: {
-          texture: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 72 72"><path fill="%23D22F27" d="M17.5 14.5s1.875 6.813 3 11c1.125 4.188 1.375 11.563 1.375 11.563L7 45.938s6.625-1.126 11.375-2.376c4.75-1.25 10.688-3.437 10.688-3.437s-1.438 5.438-2.438 9.313c-1 3.874-1.688 11.124-1.688 11.124l14.126-8.187s-.313 3.437-.313 5.687s.688 4.376.688 4.376l7.437-5.563s.125-3.062.125-5.187c0-2.126-.688-6.063-.688-6.063l14.126 8.187s-.687-7.25-1.687-11.124c-1-3.875-2.438-9.313-2.438-9.313s5.938 2.187 10.688 3.437C71.375 44.812 78 45.938 78 45.938l-14.875-8.875s.25-7.375 1.375-11.563c1.125-4.187 3-11 3-11L53.563 24.75s-3.938-4.563-6.938-6.563s-9.188-3.624-9.188-3.624s-6.187 1.624-9.187 3.624s-6.938 6.563-6.938 6.563L17.5 14.5z"/><path fill="%23EA5A47" d="M36.01 15.166c-1.509.415-4.506 1.17-7.073 2.959c-3.25 2.266-6.938 6.563-6.938 6.563L17.5 14.5s1.875 6.813 3 11c1.125 4.188 1.375 11.563 1.375 11.563L7 45.938s6.625-1.126 11.375-2.376c4.75-1.25 10.688-3.437 10.688-3.437s-1.438 5.438-2.438 9.313c-1 3.874-1.688 11.124-1.688 11.124l14.126-8.187s-.313 3.437-.313 5.687s.688 4.376.688 4.376l1.573-1.178V15.166z"/></svg>',
-          xScale: 1,
-          yScale: 1
-        }
-      },
-      label: 'dragon'
-    });
-    dragonRef.current = dragon;
-
-    World.add(engine.world, [ground, dragon]);
-
-    Engine.run(engine);
-    Render.run(render);
-
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', (e) => handleKeyDown(e, dragon));
 
     const moveInterval = setInterval(() => {
       const force = 0.001;
@@ -62,112 +25,21 @@ const PhysicsSimulator = () => {
       });
     }, 100);
 
-    // Lightning effect
     const lightningInterval = setInterval(() => {
-      if (Math.random() < 0.005) { // 0.5% chance every 100ms
-        triggerLightning();
+      if (Math.random() < 0.005) {
+        triggerLightning(engineRef.current, setIsLightning);
       }
     }, 100);
 
     return () => {
-      Render.stop(render);
-      World.clear(engine.world);
-      Engine.clear(engine);
-      render.canvas.remove();
-      render.canvas = null;
-      render.context = null;
-      render.textures = {};
+      Matter.Render.stop(engine.render);
+      Matter.World.clear(engine.world);
+      Matter.Engine.clear(engine);
       window.removeEventListener('keydown', handleKeyDown);
       clearInterval(moveInterval);
       clearInterval(lightningInterval);
     };
   }, []);
-
-  const handleKeyDown = (event) => {
-    const dragon = dragonRef.current;
-    if (!dragon) return;
-
-    const force = 0.002;
-    switch (event.key) {
-      case 'ArrowUp':
-        Matter.Body.applyForce(dragon, dragon.position, { x: 0, y: -force });
-        break;
-      case 'ArrowDown':
-        Matter.Body.applyForce(dragon, dragon.position, { x: 0, y: force });
-        break;
-      case 'ArrowLeft':
-        Matter.Body.applyForce(dragon, dragon.position, { x: -force, y: 0 });
-        break;
-      case 'ArrowRight':
-        Matter.Body.applyForce(dragon, dragon.position, { x: force, y: 0 });
-        break;
-    }
-  };
-
-  const addShape = (shapeType) => {
-    const World = Matter.World;
-    const Bodies = Matter.Bodies;
-
-    const x = Math.random() * 800;
-    const y = Math.random() * 300;
-
-    let shape;
-    switch (shapeType) {
-      case 'circle':
-        shape = Bodies.circle(x, y, 20, {
-          restitution: 0.8,
-          render: { fillStyle: '#4285F4' }
-        });
-        break;
-      case 'rectangle':
-        shape = Bodies.rectangle(x, y, 40, 40, {
-          restitution: 0.6,
-          render: { fillStyle: '#EA4335' }
-        });
-        break;
-      case 'triangle':
-        shape = Bodies.polygon(x, y, 3, 30, {
-          restitution: 0.5,
-          render: { fillStyle: '#FBBC05' }
-        });
-        break;
-    }
-
-    World.add(engineRef.current.world, [shape]);
-
-    Matter.Events.on(engineRef.current, 'collisionStart', (event) => {
-      event.pairs.forEach((pair) => {
-        const { bodyA, bodyB } = pair;
-        if (bodyA.label === 'dragon' || bodyB.label === 'dragon') {
-          const shapeToRemove = bodyA.label === 'dragon' ? bodyB : bodyA;
-          Matter.World.remove(engineRef.current.world, shapeToRemove);
-        }
-      });
-    });
-  };
-
-  const triggerLightning = () => {
-    setIsLightning(true);
-    const shapes = engineRef.current.world.bodies.filter(body => body.label !== 'dragon' && !body.isStatic);
-    shapes.forEach(shape => {
-      Matter.World.remove(engineRef.current.world, shape);
-    });
-    setTimeout(() => setIsLightning(false), 500);
-  };
-
-  useEffect(() => {
-    let intervalId;
-    if (isCreatingCircle || isCreatingRectangle || isCreatingTriangle) {
-      intervalId = setInterval(() => {
-        for (let i = 0; i < 5; i++) {
-          if (isCreatingCircle) addShape('circle');
-          if (isCreatingRectangle) addShape('rectangle');
-          if (isCreatingTriangle) addShape('triangle');
-        }
-      }, 50);
-    }
-    return () => clearInterval(intervalId);
-  }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle]);
 
   return (
     <div className="flex flex-col items-center">
@@ -189,30 +61,9 @@ const PhysicsSimulator = () => {
             }}
           />
         )}
+        <DragonFire dragonRef={dragonRef} />
       </div>
-      <div className="mt-4 space-x-4">
-        <Button
-          onMouseDown={() => setIsCreatingCircle(true)}
-          onMouseUp={() => setIsCreatingCircle(false)}
-          onMouseLeave={() => setIsCreatingCircle(false)}
-        >
-          Add Circles
-        </Button>
-        <Button
-          onMouseDown={() => setIsCreatingRectangle(true)}
-          onMouseUp={() => setIsCreatingRectangle(false)}
-          onMouseLeave={() => setIsCreatingRectangle(false)}
-        >
-          Add Rectangles
-        </Button>
-        <Button
-          onMouseDown={() => setIsCreatingTriangle(true)}
-          onMouseUp={() => setIsCreatingTriangle(false)}
-          onMouseLeave={() => setIsCreatingTriangle(false)}
-        >
-          Add Triangles
-        </Button>
-      </div>
+      <ShapeCreator addShape={(type) => addShape(type, engineRef.current)} />
       <p className="mt-4 text-sm text-gray-600">Use arrow keys to control the dragon</p>
     </div>
   );
