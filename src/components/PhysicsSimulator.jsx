@@ -1,75 +1,123 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
-import ShapeCreator from './ShapeCreator';
-import DragonFire from './DragonFire';
-import { setupPhysics, handleKeyDown, addShape, triggerLightning } from '../utils/physicsUtils';
 
 const PhysicsSimulator = () => {
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
-  const dragonRef = useRef(null);
-  const [isLightning, setIsLightning] = useState(false);
+  const [isCreatingCircle, setIsCreatingCircle] = useState(false);
+  const [isCreatingRectangle, setIsCreatingRectangle] = useState(false);
+  const [isCreatingTriangle, setIsCreatingTriangle] = useState(false);
 
   useEffect(() => {
-    const dragonImage = new Image();
-    dragonImage.src = '/dragon.png';
-    dragonImage.onload = () => {
-      const { engine, dragon } = setupPhysics(sceneRef, engineRef, dragonRef);
+    const Engine = Matter.Engine;
+    const Render = Matter.Render;
+    const World = Matter.World;
+    const Bodies = Matter.Bodies;
 
-      const handleKeyDownWrapper = (e) => handleKeyDown(e, dragon);
-      window.addEventListener('keydown', handleKeyDownWrapper);
+    const engine = Engine.create();
+    engineRef.current = engine;
 
-      const moveInterval = setInterval(() => {
-        const force = 0.001;
-        const randomDirection = Math.random() * Math.PI * 2;
-        Matter.Body.applyForce(dragon, dragon.position, {
-          x: Math.cos(randomDirection) * force,
-          y: Math.sin(randomDirection) * force
-        });
-      }, 100);
+    const render = Render.create({
+      element: sceneRef.current,
+      engine: engine,
+      options: {
+        width: 800,
+        height: 600,
+        wireframes: false,
+        background: '#f4f4f4'
+      }
+    });
 
-      const lightningInterval = setInterval(() => {
-        if (Math.random() < 0.005) {
-          triggerLightning(engineRef.current, setIsLightning);
-        }
-      }, 100);
+    const ground = Bodies.rectangle(400, 590, 800, 20, { isStatic: true });
+    World.add(engine.world, [ground]);
 
-      return () => {
-        Matter.Render.stop(engine.render);
-        Matter.World.clear(engine.world);
-        Matter.Engine.clear(engine);
-        window.removeEventListener('keydown', handleKeyDownWrapper);
-        clearInterval(moveInterval);
-        clearInterval(lightningInterval);
-      };
+    Engine.run(engine);
+    Render.run(render);
+
+    return () => {
+      Render.stop(render);
+      World.clear(engine.world);
+      Engine.clear(engine);
+      render.canvas.remove();
+      render.canvas = null;
+      render.context = null;
+      render.textures = {};
     };
   }, []);
 
+  const addShape = (shapeType) => {
+    const World = Matter.World;
+    const Bodies = Matter.Bodies;
+
+    const x = 400; // Middle of the canvas
+    const y = 300; // Middle of the canvas
+
+    let shape;
+    switch (shapeType) {
+      case 'circle':
+        shape = Bodies.circle(x, y, 20, {
+          restitution: 0.8,
+          render: { fillStyle: '#4285F4' }
+        });
+        break;
+      case 'rectangle':
+        shape = Bodies.rectangle(x, y, 40, 40, {
+          restitution: 0.6,
+          render: { fillStyle: '#EA4335' }
+        });
+        break;
+      case 'triangle':
+        shape = Bodies.polygon(x, y, 3, 30, {
+          restitution: 0.5,
+          render: { fillStyle: '#FBBC05' }
+        });
+        break;
+    }
+
+    World.add(engineRef.current.world, [shape]);
+  };
+
+  useEffect(() => {
+    let intervalId;
+    if (isCreatingCircle || isCreatingRectangle || isCreatingTriangle) {
+      intervalId = setInterval(() => {
+        for (let i = 0; i < 5; i++) { // Create 5 shapes per interval
+          if (isCreatingCircle) addShape('circle');
+          if (isCreatingRectangle) addShape('rectangle');
+          if (isCreatingTriangle) addShape('triangle');
+        }
+      }, 50); // Reduced interval to 50ms for faster creation
+    }
+    return () => clearInterval(intervalId);
+  }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle]);
+
   return (
     <div className="flex flex-col items-center">
-      <div 
-        ref={sceneRef} 
-        className={`border border-gray-300 rounded-lg overflow-hidden ${isLightning ? 'bg-yellow-200' : ''}`} 
-        style={{ position: 'relative', width: '800px', height: '600px' }}
-      >
-        {isLightning && (
-          <div 
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(255, 255, 255, 0.8)',
-              zIndex: 10,
-            }}
-          />
-        )}
-        <DragonFire dragonRef={dragonRef} />
+      <div ref={sceneRef} className="border border-gray-300 rounded-lg overflow-hidden" />
+      <div className="mt-4 space-x-4">
+        <Button
+          onMouseDown={() => setIsCreatingCircle(true)}
+          onMouseUp={() => setIsCreatingCircle(false)}
+          onMouseLeave={() => setIsCreatingCircle(false)}
+        >
+          Add Circles
+        </Button>
+        <Button
+          onMouseDown={() => setIsCreatingRectangle(true)}
+          onMouseUp={() => setIsCreatingRectangle(false)}
+          onMouseLeave={() => setIsCreatingRectangle(false)}
+        >
+          Add Rectangles
+        </Button>
+        <Button
+          onMouseDown={() => setIsCreatingTriangle(true)}
+          onMouseUp={() => setIsCreatingTriangle(false)}
+          onMouseLeave={() => setIsCreatingTriangle(false)}
+        >
+          Add Triangles
+        </Button>
       </div>
-      <ShapeCreator addShape={(type) => addShape(type, engineRef.current)} />
-      <p className="mt-4 text-sm text-gray-600">Use arrow keys to control the dragon</p>
     </div>
   );
 };
