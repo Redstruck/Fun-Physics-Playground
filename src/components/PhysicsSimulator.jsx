@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
-import DragonFire from './DragonFire';
 import ShapeCreator from './ShapeCreator';
 import { setupPhysics, handleKeyDown, addShape, triggerLightning } from '../utils/physicsUtils';
 
@@ -46,7 +45,7 @@ const PhysicsSimulator = () => {
       <div 
         ref={sceneRef} 
         className={`border border-gray-300 rounded-lg overflow-hidden ${isLightning ? 'bg-yellow-200' : ''}`} 
-        style={{ position: 'relative' }}
+        style={{ position: 'relative', width: '800px', height: '600px' }}
       >
         {isLightning && (
           <div 
@@ -61,7 +60,6 @@ const PhysicsSimulator = () => {
             }}
           />
         )}
-        <DragonFire dragonRef={dragonRef} />
       </div>
       <ShapeCreator addShape={(type) => addShape(type, engineRef.current)} />
       <p className="mt-4 text-sm text-gray-600">Use arrow keys to control the dragon</p>
