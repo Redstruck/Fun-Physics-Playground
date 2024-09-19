@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
 
 const PhysicsSimulator = () => {
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
+  const [isCreatingCircle, setIsCreatingCircle] = useState(false);
+  const [isCreatingRectangle, setIsCreatingRectangle] = useState(false);
+  const [isCreatingTriangle, setIsCreatingTriangle] = useState(false);
 
   useEffect(() => {
     const Engine = Matter.Engine;
@@ -12,11 +15,9 @@ const PhysicsSimulator = () => {
     const World = Matter.World;
     const Bodies = Matter.Bodies;
 
-    // Create an engine
     const engine = Engine.create();
     engineRef.current = engine;
 
-    // Create a renderer
     const render = Render.create({
       element: sceneRef.current,
       engine: engine,
@@ -28,13 +29,9 @@ const PhysicsSimulator = () => {
       }
     });
 
-    // Create ground
     const ground = Bodies.rectangle(400, 590, 800, 20, { isStatic: true });
-
-    // Add ground to the world
     World.add(engine.world, [ground]);
 
-    // Run the engine
     Engine.run(engine);
     Render.run(render);
 
@@ -49,43 +46,76 @@ const PhysicsSimulator = () => {
     };
   }, []);
 
-  const addCircle = () => {
+  const addShape = (shapeType) => {
     const World = Matter.World;
     const Bodies = Matter.Bodies;
-    const circle = Bodies.circle(400, 50, 30, {
-      restitution: 0.8,
-      render: { fillStyle: '#4285F4' }
-    });
-    World.add(engineRef.current.world, [circle]);
+    const Common = Matter.Common;
+
+    const x = Common.random(100, 700);
+    const y = Common.random(0, 100);
+
+    let shape;
+    switch (shapeType) {
+      case 'circle':
+        shape = Bodies.circle(x, y, 30, {
+          restitution: 0.8,
+          render: { fillStyle: '#4285F4' }
+        });
+        break;
+      case 'rectangle':
+        shape = Bodies.rectangle(x, y, 60, 60, {
+          restitution: 0.6,
+          render: { fillStyle: '#EA4335' }
+        });
+        break;
+      case 'triangle':
+        shape = Bodies.polygon(x, y, 3, 40, {
+          restitution: 0.5,
+          render: { fillStyle: '#FBBC05' }
+        });
+        break;
+    }
+
+    World.add(engineRef.current.world, [shape]);
   };
 
-  const addRectangle = () => {
-    const World = Matter.World;
-    const Bodies = Matter.Bodies;
-    const rectangle = Bodies.rectangle(400, 50, 60, 60, {
-      restitution: 0.6,
-      render: { fillStyle: '#EA4335' }
-    });
-    World.add(engineRef.current.world, [rectangle]);
-  };
-
-  const addTriangle = () => {
-    const World = Matter.World;
-    const Bodies = Matter.Bodies;
-    const triangle = Bodies.polygon(400, 50, 3, 40, {
-      restitution: 0.5,
-      render: { fillStyle: '#FBBC05' }
-    });
-    World.add(engineRef.current.world, [triangle]);
-  };
+  useEffect(() => {
+    let intervalId;
+    if (isCreatingCircle || isCreatingRectangle || isCreatingTriangle) {
+      intervalId = setInterval(() => {
+        if (isCreatingCircle) addShape('circle');
+        if (isCreatingRectangle) addShape('rectangle');
+        if (isCreatingTriangle) addShape('triangle');
+      }, 100); // Create a shape every 100ms
+    }
+    return () => clearInterval(intervalId);
+  }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle]);
 
   return (
     <div className="flex flex-col items-center">
       <div ref={sceneRef} className="border border-gray-300 rounded-lg overflow-hidden" />
       <div className="mt-4 space-x-4">
-        <Button onClick={addCircle}>Add Circle</Button>
-        <Button onClick={addRectangle}>Add Rectangle</Button>
-        <Button onClick={addTriangle}>Add Triangle</Button>
+        <Button
+          onMouseDown={() => setIsCreatingCircle(true)}
+          onMouseUp={() => setIsCreatingCircle(false)}
+          onMouseLeave={() => setIsCreatingCircle(false)}
+        >
+          Add Circles
+        </Button>
+        <Button
+          onMouseDown={() => setIsCreatingRectangle(true)}
+          onMouseUp={() => setIsCreatingRectangle(false)}
+          onMouseLeave={() => setIsCreatingRectangle(false)}
+        >
+          Add Rectangles
+        </Button>
+        <Button
+          onMouseDown={() => setIsCreatingTriangle(true)}
+          onMouseUp={() => setIsCreatingTriangle(false)}
+          onMouseLeave={() => setIsCreatingTriangle(false)}
+        >
+          Add Triangles
+        </Button>
       </div>
     </div>
   );
