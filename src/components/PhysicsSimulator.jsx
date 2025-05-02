@@ -127,6 +127,7 @@ const PhysicsSimulator = () => {
     World.remove(engineRef.current.world, bodies);
   };
 
+  // Improved shape creation interval with both mouse and touch support
   useEffect(() => {
     let intervalId;
     if (isCreatingCircle || isCreatingRectangle || isCreatingTriangle) {
@@ -141,42 +142,52 @@ const PhysicsSimulator = () => {
     return () => clearInterval(intervalId);
   }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle]);
 
+  // Helper function to handle both mouse and touch events
+  const handleInteractionStart = (setter) => {
+    setter(true);
+  };
+
+  const handleInteractionEnd = (setter) => {
+    setter(false);
+  };
+
   return (
     <div className="flex flex-col items-center w-full">
       <div ref={sceneRef} className="border border-gray-300 rounded-lg overflow-hidden max-w-full" />
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-[800px]">
         <Button
-          onMouseDown={() => setIsCreatingCircle(true)}
-          onMouseUp={() => setIsCreatingCircle(false)}
-          onMouseLeave={() => setIsCreatingCircle(false)}
-          onTouchStart={() => setIsCreatingCircle(true)}
-          onTouchEnd={() => setIsCreatingCircle(false)}
+          onMouseDown={() => handleInteractionStart(setIsCreatingCircle)}
+          onMouseUp={() => handleInteractionEnd(setIsCreatingCircle)}
+          onMouseLeave={() => handleInteractionEnd(setIsCreatingCircle)}
+          onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingCircle); }}
+          onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingCircle); }}
           className="w-full"
         >
           Add Circles
         </Button>
         <Button
-          onMouseDown={() => setIsCreatingRectangle(true)}
-          onMouseUp={() => setIsCreatingRectangle(false)}
-          onMouseLeave={() => setIsCreatingRectangle(false)}
-          onTouchStart={() => setIsCreatingRectangle(true)}
-          onTouchEnd={() => setIsCreatingRectangle(false)}
+          onMouseDown={() => handleInteractionStart(setIsCreatingRectangle)}
+          onMouseUp={() => handleInteractionEnd(setIsCreatingRectangle)}
+          onMouseLeave={() => handleInteractionEnd(setIsCreatingRectangle)}
+          onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingRectangle); }}
+          onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingRectangle); }}
           className="w-full"
         >
           Add Rectangles
         </Button>
         <Button
-          onMouseDown={() => setIsCreatingTriangle(true)}
-          onMouseUp={() => setIsCreatingTriangle(false)}
-          onMouseLeave={() => setIsCreatingTriangle(false)}
-          onTouchStart={() => setIsCreatingTriangle(true)}
-          onTouchEnd={() => setIsCreatingTriangle(false)}
+          onMouseDown={() => handleInteractionStart(setIsCreatingTriangle)}
+          onMouseUp={() => handleInteractionEnd(setIsCreatingTriangle)}
+          onMouseLeave={() => handleInteractionEnd(setIsCreatingTriangle)}
+          onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingTriangle); }}
+          onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingTriangle); }}
           className="w-full"
         >
           Add Triangles
         </Button>
         <Button 
-          onClick={clearAllShapes} 
+          onClick={clearAllShapes}
+          onTouchStart={(e) => { e.preventDefault(); clearAllShapes(); }}
           variant="destructive"
           className="w-full"
         >
