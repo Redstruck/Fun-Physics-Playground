@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ const PhysicsSimulator = () => {
   const [isCreatingTriangle, setIsCreatingTriangle] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [showBorders, setShowBorders] = useState(false);
+  const [borderLock, setBorderLock] = useState(false);
   const wallsRef = useRef([]);
 
   // Update dimensions on window resize
@@ -77,6 +77,11 @@ const PhysicsSimulator = () => {
     if (showBorders) {
       addBorderWalls();
     }
+    
+    // Add border lock if enabled
+    if (borderLock) {
+      addBorderLockWalls();
+    }
 
     return () => {
       Render.stop(render);
@@ -96,11 +101,35 @@ const PhysicsSimulator = () => {
     if (engineRef.current) {
       if (showBorders) {
         addBorderWalls();
+        // If both are enabled, remove border lock as it would be redundant
+        if (borderLock) {
+          removeBorderLockWalls();
+        }
       } else {
         removeBorderWalls();
+        // Re-add border lock walls if it's enabled
+        if (borderLock) {
+          addBorderLockWalls();
+        }
       }
     }
   }, [showBorders, dimensions]);
+
+  // Effect to handle border lock when borderLock changes
+  useEffect(() => {
+    if (engineRef.current) {
+      if (borderLock) {
+        addBorderLockWalls();
+        // If both are enabled, remove regular borders as border lock will take precedence
+        if (showBorders) {
+          removeBorderWalls();
+          setShowBorders(false);
+        }
+      } else {
+        removeBorderLockWalls();
+      }
+    }
+  }, [borderLock, dimensions]);
 
   const addBorderWalls = () => {
     // Remove any existing walls first
@@ -152,8 +181,77 @@ const PhysicsSimulator = () => {
     }
   };
 
+  // Function to add border lock walls (sides and bottom only)
+  const addBorderLockWalls = () => {
+    // Remove any existing walls first
+    removeBorderLockWalls();
+
+    const World = Matter.World;
+    const Bodies = Matter.Bodies;
+
+    const wallThickness = 20;
+    const wallOptions = { 
+      isStatic: true, 
+      render: { 
+        // Make walls semi-transparent to indicate they're invisible boundaries
+        fillStyle: 'rgba(150, 150, 150, 0.2)' 
+      } 
+    };
+    
+    // Left wall
+    const leftWall = Bodies.rectangle(
+      -wallThickness / 2,
+      dimensions.height / 2,
+      wallThickness,
+      dimensions.height,
+      wallOptions
+    );
+    
+    // Right wall
+    const rightWall = Bodies.rectangle(
+      dimensions.width + wallThickness / 2,
+      dimensions.height / 2,
+      wallThickness,
+      dimensions.height,
+      wallOptions
+    );
+    
+    // Bottom wall (already exists as ground, but making it wider to ensure coverage)
+    const bottomWall = Bodies.rectangle(
+      dimensions.width / 2,
+      dimensions.height + wallThickness / 2,
+      dimensions.width + wallThickness * 2,
+      wallThickness,
+      wallOptions
+    );
+    
+    const walls = [leftWall, rightWall, bottomWall];
+    World.add(engineRef.current.world, walls);
+    wallsRef.current = walls;
+  };
+
+  const removeBorderLockWalls = () => {
+    if (wallsRef.current.length > 0 && engineRef.current) {
+      const World = Matter.World;
+      World.remove(engineRef.current.world, wallsRef.current);
+      wallsRef.current = [];
+    }
+  };
+
   const toggleBorders = () => {
     setShowBorders(prevState => !prevState);
+    if (!showBorders && borderLock) {
+      // Turn off border lock if enabling regular borders
+      setBorderLock(false);
+    }
+  };
+
+  const toggleBorderLock = () => {
+    setBorderLock(prevState => !prevState);
+    if (!borderLock && showBorders) {
+      // Turn off regular borders if enabling border lock
+      setShowBorders(false);
+    }
   };
 
   const addShape = (shapeType) => {
@@ -226,7 +324,7 @@ const PhysicsSimulator = () => {
   return (
     <div className="flex flex-col items-center w-full">
       <div ref={sceneRef} className="border border-gray-300 rounded-lg overflow-hidden max-w-full" />
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 w-full max-w-[800px]">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 w-full max-w-[800px]">
         <Button
           onMouseDown={() => handleInteractionStart(setIsCreatingCircle)}
           onMouseUp={() => handleInteractionEnd(setIsCreatingCircle)}
@@ -274,6 +372,15 @@ const PhysicsSimulator = () => {
         >
           <Square className="h-4 w-4 mr-2" />
           {showBorders ? "Hide Borders" : "Show Borders"}
+        </Button>
+        <Button 
+          onClick={toggleBorderLock}
+          onTouchStart={(e) => { e.preventDefault(); toggleBorderLock(); }}
+          variant={borderLock ? "secondary" : "outline"}
+          className="w-full"
+        >
+          <Square className="h-4 w-4 mr-2" />
+          {borderLock ? "Unlock Borders" : "Lock Borders"}
         </Button>
       </div>
     </div>
