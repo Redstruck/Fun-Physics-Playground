@@ -1,6 +1,8 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 const PhysicsSimulator = () => {
   const sceneRef = useRef(null);
@@ -78,6 +80,17 @@ const PhysicsSimulator = () => {
     World.add(engineRef.current.world, [shape]);
   };
 
+  const clearAllShapes = () => {
+    const World = Matter.World;
+    const Composite = Matter.Composite;
+    
+    // Get all bodies except the ground (which is at index 0)
+    const bodies = Composite.allBodies(engineRef.current.world).slice(1);
+    
+    // Remove all bodies except the ground
+    World.remove(engineRef.current.world, bodies);
+  };
+
   useEffect(() => {
     let intervalId;
     if (isCreatingCircle || isCreatingRectangle || isCreatingTriangle) {
@@ -116,6 +129,14 @@ const PhysicsSimulator = () => {
           onMouseLeave={() => setIsCreatingTriangle(false)}
         >
           Add Triangles
+        </Button>
+        <Button 
+          onClick={clearAllShapes} 
+          variant="destructive"
+          className="ml-4"
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Clear All
         </Button>
       </div>
     </div>
