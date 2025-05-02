@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, BorderAll } from "lucide-react";
 
 const PhysicsSimulator = () => {
   const sceneRef = useRef(null);
@@ -11,6 +11,8 @@ const PhysicsSimulator = () => {
   const [isCreatingRectangle, setIsCreatingRectangle] = useState(false);
   const [isCreatingTriangle, setIsCreatingTriangle] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [showBorders, setShowBorders] = useState(false);
+  const wallsRef = useRef([]);
 
   // Update dimensions on window resize
   useEffect(() => {
@@ -64,12 +66,17 @@ const PhysicsSimulator = () => {
       dimensions.height - 10, 
       dimensions.width, 
       20, 
-      { isStatic: true }
+      { isStatic: true, render: { fillStyle: '#333333' } }
     );
     World.add(engine.world, [ground]);
 
     Engine.run(engine);
     Render.run(render);
+
+    // Add initial borders if showBorders is true
+    if (showBorders) {
+      addBorderWalls();
+    }
 
     return () => {
       Render.stop(render);
@@ -83,6 +90,71 @@ const PhysicsSimulator = () => {
       }
     };
   }, [dimensions]);
+
+  // Effect to handle borders when showBorders changes
+  useEffect(() => {
+    if (engineRef.current) {
+      if (showBorders) {
+        addBorderWalls();
+      } else {
+        removeBorderWalls();
+      }
+    }
+  }, [showBorders, dimensions]);
+
+  const addBorderWalls = () => {
+    // Remove any existing walls first
+    removeBorderWalls();
+
+    const World = Matter.World;
+    const Bodies = Matter.Bodies;
+
+    const wallThickness = 20;
+    const wallOptions = { isStatic: true, render: { fillStyle: '#333333' } };
+    
+    // Left wall
+    const leftWall = Bodies.rectangle(
+      -wallThickness / 2,
+      dimensions.height / 2,
+      wallThickness,
+      dimensions.height,
+      wallOptions
+    );
+    
+    // Right wall
+    const rightWall = Bodies.rectangle(
+      dimensions.width + wallThickness / 2,
+      dimensions.height / 2,
+      wallThickness,
+      dimensions.height,
+      wallOptions
+    );
+    
+    // Top wall
+    const topWall = Bodies.rectangle(
+      dimensions.width / 2,
+      -wallThickness / 2,
+      dimensions.width,
+      wallThickness,
+      wallOptions
+    );
+    
+    const walls = [leftWall, rightWall, topWall];
+    World.add(engineRef.current.world, walls);
+    wallsRef.current = walls;
+  };
+
+  const removeBorderWalls = () => {
+    if (wallsRef.current.length > 0 && engineRef.current) {
+      const World = Matter.World;
+      World.remove(engineRef.current.world, wallsRef.current);
+      wallsRef.current = [];
+    }
+  };
+
+  const toggleBorders = () => {
+    setShowBorders(prevState => !prevState);
+  };
 
   const addShape = (shapeType) => {
     const World = Matter.World;
@@ -154,7 +226,7 @@ const PhysicsSimulator = () => {
   return (
     <div className="flex flex-col items-center w-full">
       <div ref={sceneRef} className="border border-gray-300 rounded-lg overflow-hidden max-w-full" />
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 w-full max-w-[800px]">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2 w-full max-w-[800px]">
         <Button
           onMouseDown={() => handleInteractionStart(setIsCreatingCircle)}
           onMouseUp={() => handleInteractionEnd(setIsCreatingCircle)}
@@ -193,6 +265,15 @@ const PhysicsSimulator = () => {
         >
           <Trash2 className="h-4 w-4 mr-2" />
           Clear All
+        </Button>
+        <Button 
+          onClick={toggleBorders}
+          onTouchStart={(e) => { e.preventDefault(); toggleBorders(); }}
+          variant={showBorders ? "secondary" : "outline"}
+          className="w-full"
+        >
+          <BorderAll className="h-4 w-4 mr-2" />
+          {showBorders ? "Hide Borders" : "Show Borders"}
         </Button>
       </div>
     </div>
