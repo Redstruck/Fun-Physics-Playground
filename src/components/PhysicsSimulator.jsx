@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
-import { Trash2, BorderAll } from "lucide-react";
+import { Trash2, Square } from "lucide-react";
 
 const PhysicsSimulator = () => {
   const sceneRef = useRef(null);
@@ -272,7 +272,7 @@ const PhysicsSimulator = () => {
           variant={showBorders ? "secondary" : "outline"}
           className="w-full"
         >
-          <BorderAll className="h-4 w-4 mr-2" />
+          <Square className="h-4 w-4 mr-2" />
           {showBorders ? "Hide Borders" : "Show Borders"}
         </Button>
       </div>
