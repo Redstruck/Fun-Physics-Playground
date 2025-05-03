@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ const PhysicsSimulator = () => {
   const [showBorders, setShowBorders] = useState(false);
   const [borderLock, setBorderLock] = useState(false);
   const wallsRef = useRef([]);
+  const groundRef = useRef(null); // Reference to the ground body
+  const shapeRef = useRef([]); // Reference to keep track of shapes separately from walls
 
   // Update dimensions on window resize
   useEffect(() => {
@@ -68,6 +71,7 @@ const PhysicsSimulator = () => {
       20, 
       { isStatic: true, render: { fillStyle: '#333333' } }
     );
+    groundRef.current = ground; // Store reference to ground
     World.add(engine.world, [ground]);
 
     Engine.run(engine);
@@ -284,17 +288,27 @@ const PhysicsSimulator = () => {
     }
 
     World.add(engineRef.current.world, [shape]);
+    // Add to shapes array for tracking
+    shapeRef.current.push(shape);
   };
 
   const clearAllShapes = () => {
     const World = Matter.World;
-    const Composite = Matter.Composite;
     
-    // Get all bodies except the ground (which is at index 0)
-    const bodies = Composite.allBodies(engineRef.current.world).slice(1);
+    // Only remove the shapes, not the walls or ground
+    if (shapeRef.current.length > 0) {
+      World.remove(engineRef.current.world, shapeRef.current);
+      shapeRef.current = []; // Reset the shapes array
+    }
     
-    // Remove all bodies except the ground
-    World.remove(engineRef.current.world, bodies);
+    // Re-add the current border configuration if needed
+    if (showBorders) {
+      // Ensure borders are still active
+      addBorderWalls();
+    } else if (borderLock) {
+      // Ensure border lock is still active
+      addBorderLockWalls();
+    }
   };
 
   // Improved shape creation interval with both mouse and touch support
