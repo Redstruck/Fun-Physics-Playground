@@ -1,7 +1,9 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
 import { Trash2, Square } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const PhysicsSimulator = () => {
   const sceneRef = useRef(null);
@@ -15,6 +17,10 @@ const PhysicsSimulator = () => {
   const wallsRef = useRef([]);
   const groundRef = useRef(null); // Reference to the ground body
   const shapeRef = useRef([]); // Reference to keep track of shapes separately from walls
+  
+  // New state variables for click-to-place mode
+  const [clickToPlaceMode, setClickToPlaceMode] = useState(false);
+  const [selectedShape, setSelectedShape] = useState(null); // 'circle', 'square', or 'triangle'
 
   // Update dimensions on window resize
   useEffect(() => {
@@ -257,12 +263,9 @@ const PhysicsSimulator = () => {
     }
   };
 
-  const addShape = (shapeType) => {
+  const addShape = (shapeType, x = dimensions.width / 2, y = dimensions.height / 2) => {
     const World = Matter.World;
     const Bodies = Matter.Bodies;
-
-    const x = dimensions.width / 2; // Middle of the canvas
-    const y = dimensions.height / 2; // Middle of the canvas
 
     let shape;
     switch (shapeType) {
@@ -272,7 +275,7 @@ const PhysicsSimulator = () => {
           render: { fillStyle: '#4285F4' }
         });
         break;
-      case 'rectangle':
+      case 'square':
         shape = Bodies.rectangle(x, y, 40, 40, {
           restitution: 0.6,
           render: { fillStyle: '#EA4335' }
@@ -286,9 +289,11 @@ const PhysicsSimulator = () => {
         break;
     }
 
-    World.add(engineRef.current.world, [shape]);
-    // Add to shapes array for tracking
-    shapeRef.current.push(shape);
+    if (shape) {
+      World.add(engineRef.current.world, [shape]);
+      // Add to shapes array for tracking
+      shapeRef.current.push(shape);
+    }
   };
 
   const clearAllShapes = () => {
@@ -310,91 +315,159 @@ const PhysicsSimulator = () => {
     }
   };
 
+  // New function to handle click-to-place
+  const handleCanvasClick = (event) => {
+    if (!clickToPlaceMode || !selectedShape || !engineRef.current) return;
+
+    // Get canvas element and its bounding rect
+    const canvas = engineRef.current.render.canvas;
+    const rect = canvas.getBoundingClientRect();
+
+    // Calculate the position relative to the canvas
+    const x = (event.clientX - rect.left) * (canvas.width / rect.width);
+    const y = (event.clientY - rect.top) * (canvas.height / rect.height);
+
+    // Add the shape at the click position
+    addShape(selectedShape, x, y);
+  };
+
   // Improved shape creation interval with both mouse and touch support
   useEffect(() => {
     let intervalId;
-    if (isCreatingCircle || isCreatingRectangle || isCreatingTriangle) {
+    // Only use interval for auto-spawning when not in click-to-place mode
+    if (!clickToPlaceMode && (isCreatingCircle || isCreatingRectangle || isCreatingTriangle)) {
       intervalId = setInterval(() => {
         for (let i = 0; i < 5; i++) { // Create 5 shapes per interval
           if (isCreatingCircle) addShape('circle');
-          if (isCreatingRectangle) addShape('rectangle');
+          if (isCreatingRectangle) addShape('square');
           if (isCreatingTriangle) addShape('triangle');
         }
       }, 50); // Reduced interval to 50ms for faster creation
     }
     return () => clearInterval(intervalId);
-  }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle]);
+  }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle, clickToPlaceMode]);
 
   // Helper function to handle both mouse and touch events
   const handleInteractionStart = (setter) => {
-    setter(true);
+    if (!clickToPlaceMode) {
+      // Original behavior when click-to-place is off
+      setter(true);
+    }
   };
 
   const handleInteractionEnd = (setter) => {
-    setter(false);
+    if (!clickToPlaceMode) {
+      // Original behavior when click-to-place is off
+      setter(false);
+    }
+  };
+
+  // Handle shape button clicks for click-to-place mode
+  const handleShapeButtonClick = (shapeType) => {
+    if (clickToPlaceMode) {
+      // In click-to-place mode, select the shape type
+      setSelectedShape(shapeType);
+    }
+    // If not in click-to-place mode, the regular button press/release
+    // handling will take care of spawning shapes
   };
 
   return (
-    <div className="flex flex-col items-center w-full">
-      <div ref={sceneRef} className="border border-gray-300 rounded-lg overflow-hidden max-w-full" />
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 w-full max-w-[800px]">
-        <Button
-          onMouseDown={() => handleInteractionStart(setIsCreatingCircle)}
-          onMouseUp={() => handleInteractionEnd(setIsCreatingCircle)}
-          onMouseLeave={() => handleInteractionEnd(setIsCreatingCircle)}
-          onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingCircle); }}
-          onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingCircle); }}
-          className="w-full"
-        >
-          Add Circles
-        </Button>
-        <Button
-          onMouseDown={() => handleInteractionStart(setIsCreatingRectangle)}
-          onMouseUp={() => handleInteractionEnd(setIsCreatingRectangle)}
-          onMouseLeave={() => handleInteractionEnd(setIsCreatingRectangle)}
-          onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingRectangle); }}
-          onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingRectangle); }}
-          className="w-full"
-        >
-          Add Squares
-        </Button>
-        <Button
-          onMouseDown={() => handleInteractionStart(setIsCreatingTriangle)}
-          onMouseUp={() => handleInteractionEnd(setIsCreatingTriangle)}
-          onMouseLeave={() => handleInteractionEnd(setIsCreatingTriangle)}
-          onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingTriangle); }}
-          onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingTriangle); }}
-          className="w-full"
-        >
-          Add Triangles
-        </Button>
-        <Button 
-          onClick={clearAllShapes}
-          onTouchStart={(e) => { e.preventDefault(); clearAllShapes(); }}
-          variant="destructive"
-          className="w-full"
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Clear All
-        </Button>
-        <Button 
-          onClick={toggleBorders}
-          onTouchStart={(e) => { e.preventDefault(); toggleBorders(); }}
-          variant={showBorders ? "secondary" : "outline"}
-          className="w-full"
-        >
-          {!showBorders && <span className="mr-2">🔲</span>}
-          {showBorders ? "Open Borders" : "Close Borders"}
-        </Button>
-        <Button 
-          onClick={toggleBorderLock}
-          onTouchStart={(e) => { e.preventDefault(); toggleBorderLock(); }}
-          variant={borderLock ? "secondary" : "outline"}
-          className="w-full"
-        >
-          <Square className="h-4 w-4 mr-2" />
-          {borderLock ? "Unlock Borders" : "Lock Borders"}
-        </Button>
+    <div className="flex flex-col md:flex-row items-start gap-4 w-full">
+      {/* Control Panel */}
+      <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-64 flex flex-col gap-3">
+        <h2 className="text-lg font-semibold mb-2">Controls</h2>
+        
+        <div className="flex items-center space-x-2">
+          <Checkbox 
+            id="click-to-place" 
+            checked={clickToPlaceMode}
+            onCheckedChange={setClickToPlaceMode}
+          />
+          <label 
+            htmlFor="click-to-place" 
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Click-to-Place Mode
+          </label>
+        </div>
+        
+        {clickToPlaceMode && (
+          <div className="mt-2 text-sm text-gray-500">
+            Selected shape: {selectedShape || 'None'}
+          </div>
+        )}
+      </div>
+
+      {/* Main Content */}
+      <div className="flex flex-col items-center w-full">
+        <div 
+          ref={sceneRef} 
+          className="border border-gray-300 rounded-lg overflow-hidden max-w-full" 
+          onClick={handleCanvasClick}
+        />
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 w-full max-w-[800px]">
+          <Button
+            onMouseDown={() => handleInteractionStart(setIsCreatingCircle)}
+            onMouseUp={() => handleInteractionEnd(setIsCreatingCircle)}
+            onMouseLeave={() => handleInteractionEnd(setIsCreatingCircle)}
+            onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingCircle); }}
+            onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingCircle); }}
+            onClick={() => handleShapeButtonClick('circle')}
+            className={`w-full ${selectedShape === 'circle' && clickToPlaceMode ? 'bg-primary/70' : ''}`}
+          >
+            Add Circles
+          </Button>
+          <Button
+            onMouseDown={() => handleInteractionStart(setIsCreatingRectangle)}
+            onMouseUp={() => handleInteractionEnd(setIsCreatingRectangle)}
+            onMouseLeave={() => handleInteractionEnd(setIsCreatingRectangle)}
+            onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingRectangle); }}
+            onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingRectangle); }}
+            onClick={() => handleShapeButtonClick('square')}
+            className={`w-full ${selectedShape === 'square' && clickToPlaceMode ? 'bg-primary/70' : ''}`}
+          >
+            Add Squares
+          </Button>
+          <Button
+            onMouseDown={() => handleInteractionStart(setIsCreatingTriangle)}
+            onMouseUp={() => handleInteractionEnd(setIsCreatingTriangle)}
+            onMouseLeave={() => handleInteractionEnd(setIsCreatingTriangle)}
+            onTouchStart={(e) => { e.preventDefault(); handleInteractionStart(setIsCreatingTriangle); }}
+            onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingTriangle); }}
+            onClick={() => handleShapeButtonClick('triangle')}
+            className={`w-full ${selectedShape === 'triangle' && clickToPlaceMode ? 'bg-primary/70' : ''}`}
+          >
+            Add Triangles
+          </Button>
+          <Button 
+            onClick={clearAllShapes}
+            onTouchStart={(e) => { e.preventDefault(); clearAllShapes(); }}
+            variant="destructive"
+            className="w-full"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clear All
+          </Button>
+          <Button 
+            onClick={toggleBorders}
+            onTouchStart={(e) => { e.preventDefault(); toggleBorders(); }}
+            variant={showBorders ? "secondary" : "outline"}
+            className="w-full"
+          >
+            {!showBorders && <span className="mr-2">🔲</span>}
+            {showBorders ? "Open Borders" : "Close Borders"}
+          </Button>
+          <Button 
+            onClick={toggleBorderLock}
+            onTouchStart={(e) => { e.preventDefault(); toggleBorderLock(); }}
+            variant={borderLock ? "secondary" : "outline"}
+            className="w-full"
+          >
+            <Square className="h-4 w-4 mr-2" />
+            {borderLock ? "Unlock Borders" : "Lock Borders"}
+          </Button>
+        </div>
       </div>
     </div>
   );
