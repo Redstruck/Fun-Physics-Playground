@@ -370,8 +370,8 @@ const PhysicsSimulator = () => {
           variant={showBorders ? "secondary" : "outline"}
           className="w-full"
         >
-          <Square className="h-4 w-4 mr-2" />
-          {showBorders ? "Hide Borders" : "Show Borders"}
+          {!showBorders && <span className="mr-2">🔲</span>}
+          {showBorders ? "Open Borders" : "Close Borders"}
         </Button>
         <Button 
           onClick={toggleBorderLock}
