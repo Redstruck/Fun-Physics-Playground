@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ const PhysicsSimulator = () => {
   const [isCreatingCircle, setIsCreatingCircle] = useState(false);
   const [isCreatingRectangle, setIsCreatingRectangle] = useState(false);
   const [isCreatingTriangle, setIsCreatingTriangle] = useState(false);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
+  const [dimensions, setDimensions] = useState({ width: 800, height: 800 }); // Increased height to 800px
   const [showBorders, setShowBorders] = useState(false);
   const [borderLock, setBorderLock] = useState(false);
   const wallsRef = useRef([]);
@@ -22,8 +21,8 @@ const PhysicsSimulator = () => {
     const updateDimensions = () => {
       const container = sceneRef.current?.parentElement;
       if (container) {
-        const width = Math.min(container.clientWidth - 32, 800); // Max width 800px with some padding
-        const height = width * 0.75; // Maintain 4:3 aspect ratio
+        const width = Math.min(container.clientWidth - 32, 1000); // Increased max width to 1000px
+        const height = width * 0.9; // Increased height ratio for taller canvas
         setDimensions({ width, height });
         
         // Update renderer if it exists
@@ -357,7 +356,7 @@ const PhysicsSimulator = () => {
           onTouchEnd={(e) => { e.preventDefault(); handleInteractionEnd(setIsCreatingRectangle); }}
           className="w-full"
         >
-          Add Rectangles
+          Add Squares
         </Button>
         <Button
           onMouseDown={() => handleInteractionStart(setIsCreatingTriangle)}
