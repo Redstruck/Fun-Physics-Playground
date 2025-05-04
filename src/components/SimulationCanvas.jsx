@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 
@@ -12,6 +13,7 @@ const SimulationCanvas = ({
 }) => {
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
+  const renderRef = useRef(null); // Add a specific ref for the renderer
   const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
   const wallsRef = useRef([]);
   const groundRef = useRef(null);
@@ -27,12 +29,12 @@ const SimulationCanvas = ({
         setDimensions({ width, height });
         
         // Update renderer if it exists
-        if (engineRef.current?.render) {
-          engineRef.current.render.options.width = width;
-          engineRef.current.render.options.height = height;
-          engineRef.current.render.canvas.width = width;
-          engineRef.current.render.canvas.height = height;
-          Matter.Render.setPixelRatio(engineRef.current.render, window.devicePixelRatio);
+        if (renderRef.current) {
+          renderRef.current.options.width = width;
+          renderRef.current.options.height = height;
+          renderRef.current.canvas.width = width;
+          renderRef.current.canvas.height = height;
+          Matter.Render.setPixelRatio(renderRef.current, window.devicePixelRatio);
         }
       }
     };
@@ -62,6 +64,7 @@ const SimulationCanvas = ({
         pixelRatio: window.devicePixelRatio
       }
     });
+    renderRef.current = render; // Store the renderer reference separately
 
     // Create ground based on current dimensions
     const ground = Bodies.rectangle(
@@ -140,10 +143,17 @@ const SimulationCanvas = ({
 
   // Function to handle click-to-place logic
   const handleCanvasClick = (event) => {
-    if (!clickToPlaceMode || !selectedShape || !engineRef.current) return;
+    if (!clickToPlaceMode || !selectedShape || !engineRef.current) {
+      return;
+    }
 
     // Get canvas element and its bounding rect
-    const canvas = engineRef.current.render.canvas;
+    if (!renderRef.current || !renderRef.current.canvas) {
+      console.error("Renderer or canvas not available");
+      return;
+    }
+    
+    const canvas = renderRef.current.canvas;
     const rect = canvas.getBoundingClientRect();
 
     // Calculate the position relative to the canvas
@@ -183,6 +193,9 @@ const SimulationCanvas = ({
           render: { fillStyle: '#FBBC05' }
         });
         break;
+      default:
+        console.warn("Unknown shape type:", shapeType);
+        return;
     }
 
     if (shape) {
