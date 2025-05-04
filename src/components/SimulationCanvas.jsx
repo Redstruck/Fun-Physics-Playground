@@ -1,11 +1,10 @@
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import Matter from 'matter-js';
 import { createPhysicsEngine, startPhysicsEngine, stopPhysicsEngine, updatePhysicsRendererDimensions } from '../utils/physicsEngine';
 import { createShape, createGround, addShape, clearShapes, handleCanvasClick } from '../utils/shapeUtils';
 import { createBorderWalls, createBorderLockWalls, addWalls, removeWalls } from '../utils/borderUtils';
 
-const SimulationCanvas = ({
+const SimulationCanvas = forwardRef(({
   isCreatingCircle,
   isCreatingRectangle,
   isCreatingTriangle,
@@ -13,7 +12,7 @@ const SimulationCanvas = ({
   borderLock,
   clickToPlaceMode,
   selectedShape
-}) => {
+}, ref) => {
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
   const renderRef = useRef(null);
@@ -22,6 +21,16 @@ const SimulationCanvas = ({
   const groundRef = useRef(null);
   const shapeRef = useRef([]);
   
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    clearAllShapes: () => {
+      if (engineRef.current && shapeRef.current.length > 0) {
+        clearShapes(engineRef.current, shapeRef.current);
+        shapeRef.current = [];
+      }
+    }
+  }));
+
   // Update dimensions on window resize
   useEffect(() => {
     const updateDimensions = () => {
@@ -179,6 +188,6 @@ const SimulationCanvas = ({
       style={{ cursor: clickToPlaceMode && selectedShape ? 'crosshair' : 'default' }}
     />
   );
-};
+});
 
 export default SimulationCanvas;
