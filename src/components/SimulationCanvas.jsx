@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
 
@@ -151,12 +150,16 @@ const SimulationCanvas = ({
     const x = (event.clientX - rect.left) * (canvas.width / rect.width);
     const y = (event.clientY - rect.top) * (canvas.height / rect.height);
 
+    console.log("Canvas clicked:", { x, y, selectedShape });
+    
     // Add the shape at the click position
     addShape(selectedShape, x, y);
   };
 
   // Add shape at specific position
   const addShape = (shapeType, x = dimensions.width / 2, y = dimensions.height / 2) => {
+    if (!engineRef.current) return;
+    
     const World = Matter.World;
     const Bodies = Matter.Bodies;
 
@@ -183,6 +186,7 @@ const SimulationCanvas = ({
     }
 
     if (shape) {
+      console.log("Adding shape:", shapeType, "at position:", x, y);
       World.add(engineRef.current.world, [shape]);
       // Add to shapes array for tracking
       shapeRef.current.push(shape);
@@ -336,6 +340,7 @@ const SimulationCanvas = ({
       ref={sceneRef} 
       className="border border-gray-300 rounded-lg overflow-hidden max-w-full" 
       onClick={handleCanvasClick}
+      style={{ cursor: clickToPlaceMode && selectedShape ? 'crosshair' : 'default' }}
     />
   );
 };

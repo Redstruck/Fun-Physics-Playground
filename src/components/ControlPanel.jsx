@@ -26,6 +26,12 @@ const ControlPanel = ({ clickToPlaceMode, setClickToPlaceMode, selectedShape }) 
           Selected shape: {selectedShape}
         </div>
       )}
+      
+      {clickToPlaceMode && !selectedShape && (
+        <div className="mt-2 text-sm text-gray-500">
+          Click on a shape button to select a shape type
+        </div>
+      )}
     </div>
   );
 };

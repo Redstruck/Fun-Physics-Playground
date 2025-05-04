@@ -51,16 +51,26 @@ const PhysicsSimulator = () => {
     if (clickToPlaceMode) {
       // In click-to-place mode, select the shape type
       setSelectedShape(shapeType);
+      console.log("Selected shape for placing:", shapeType);
     }
     // If not in click-to-place mode, the regular button press/release
     // handling will take care of spawning shapes
+  };
+
+  // Handler for toggling click-to-place mode
+  const handleClickToPlaceModeChange = (enabled) => {
+    setClickToPlaceMode(enabled);
+    if (!enabled) {
+      // Clear selected shape when disabling click-to-place mode
+      setSelectedShape(null);
+    }
   };
 
   return (
     <div className="flex flex-col md:flex-row items-start gap-4 w-full">
       <ControlPanel 
         clickToPlaceMode={clickToPlaceMode}
-        setClickToPlaceMode={setClickToPlaceMode}
+        setClickToPlaceMode={handleClickToPlaceModeChange}
         selectedShape={selectedShape}
       />
       <div className="flex flex-col items-center w-full">
