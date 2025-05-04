@@ -1,6 +1,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Matter from 'matter-js';
+import { createPhysicsEngine, startPhysicsEngine, stopPhysicsEngine, updatePhysicsRendererDimensions } from '../utils/physicsEngine';
+import { createShape, createGround, addShape, clearShapes, handleCanvasClick } from '../utils/shapeUtils';
+import { createBorderWalls, createBorderLockWalls, addWalls, removeWalls } from '../utils/borderUtils';
 
 const SimulationCanvas = ({
   isCreatingCircle,
@@ -13,7 +16,7 @@ const SimulationCanvas = ({
 }) => {
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
-  const renderRef = useRef(null); // Add a specific ref for the renderer
+  const renderRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 800 });
   const wallsRef = useRef([]);
   const groundRef = useRef(null);
@@ -30,11 +33,7 @@ const SimulationCanvas = ({
         
         // Update renderer if it exists
         if (renderRef.current) {
-          renderRef.current.options.width = width;
-          renderRef.current.options.height = height;
-          renderRef.current.canvas.width = width;
-          renderRef.current.canvas.height = height;
-          Matter.Render.setPixelRatio(renderRef.current, window.devicePixelRatio);
+          updatePhysicsRendererDimensions(renderRef.current, width, height);
         }
       }
     };
@@ -44,62 +43,38 @@ const SimulationCanvas = ({
     return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
+  // Initialize physics engine
   useEffect(() => {
-    const Engine = Matter.Engine;
-    const Render = Matter.Render;
-    const World = Matter.World;
-    const Bodies = Matter.Bodies;
-
-    const engine = Engine.create();
+    // Create physics engine
+    const { engine, render } = createPhysicsEngine(sceneRef.current, dimensions);
     engineRef.current = engine;
-
-    const render = Render.create({
-      element: sceneRef.current,
-      engine: engine,
-      options: {
-        width: dimensions.width,
-        height: dimensions.height,
-        wireframes: false,
-        background: '#f4f4f4',
-        pixelRatio: window.devicePixelRatio
-      }
-    });
-    renderRef.current = render; // Store the renderer reference separately
+    renderRef.current = render;
 
     // Create ground based on current dimensions
-    const ground = Bodies.rectangle(
-      dimensions.width / 2, 
-      dimensions.height - 10, 
-      dimensions.width, 
-      20, 
-      { isStatic: true, render: { fillStyle: '#333333' } }
-    );
+    const ground = createGround(dimensions.width, dimensions.height);
     groundRef.current = ground;
-    World.add(engine.world, [ground]);
+    Matter.World.add(engine.world, [ground]);
 
-    Engine.run(engine);
-    Render.run(render);
+    // Start the engine
+    startPhysicsEngine(engine, render);
 
     // Add initial borders if showBorders is true
     if (showBorders) {
-      addBorderWalls();
+      const walls = createBorderWalls(dimensions);
+      addWalls(engine, walls);
+      wallsRef.current = walls;
     }
     
     // Add border lock if enabled
     if (borderLock) {
-      addBorderLockWalls();
+      const walls = createBorderLockWalls(dimensions);
+      addWalls(engine, walls);
+      wallsRef.current = walls;
     }
 
+    // Cleanup
     return () => {
-      Render.stop(render);
-      World.clear(engine.world);
-      Engine.clear(engine);
-      if (render.canvas) {
-        render.canvas.remove();
-        render.canvas = null;
-        render.context = null;
-        render.textures = {};
-      }
+      stopPhysicsEngine(render, engine);
     };
   }, [dimensions]);
 
@@ -107,16 +82,24 @@ const SimulationCanvas = ({
   useEffect(() => {
     if (engineRef.current) {
       if (showBorders) {
-        addBorderWalls();
+        const walls = createBorderWalls(dimensions);
+        addWalls(engineRef.current, walls);
+        wallsRef.current = walls;
+        
         // If both are enabled, remove border lock as it would be redundant
         if (borderLock) {
-          removeBorderLockWalls();
+          removeWalls(engineRef.current, wallsRef.current);
+          wallsRef.current = [];
         }
       } else {
-        removeBorderWalls();
+        removeWalls(engineRef.current, wallsRef.current);
+        wallsRef.current = [];
+        
         // Re-add border lock walls if it's enabled
         if (borderLock) {
-          addBorderLockWalls();
+          const walls = createBorderLockWalls(dimensions);
+          addWalls(engineRef.current, walls);
+          wallsRef.current = walls;
         }
       }
     }
@@ -126,81 +109,37 @@ const SimulationCanvas = ({
   useEffect(() => {
     if (engineRef.current) {
       if (borderLock) {
-        addBorderLockWalls();
+        const walls = createBorderLockWalls(dimensions);
+        addWalls(engineRef.current, walls);
+        wallsRef.current = walls;
+        
         // If both are enabled, remove regular borders as border lock will take precedence
         if (showBorders) {
-          removeBorderWalls();
+          removeWalls(engineRef.current, wallsRef.current);
+          wallsRef.current = [];
         }
       } else {
-        removeBorderLockWalls();
+        removeWalls(engineRef.current, wallsRef.current);
+        wallsRef.current = [];
+        
         // Re-add borders if they were enabled
         if (showBorders) {
-          addBorderWalls();
+          const walls = createBorderWalls(dimensions);
+          addWalls(engineRef.current, walls);
+          wallsRef.current = walls;
         }
       }
     }
   }, [borderLock, dimensions]);
 
   // Function to handle click-to-place logic
-  const handleCanvasClick = (event) => {
+  const handleCanvasClicking = (event) => {
     if (!clickToPlaceMode || !selectedShape || !engineRef.current) {
       return;
     }
-
-    // Get canvas element and its bounding rect
-    if (!renderRef.current || !renderRef.current.canvas) {
-      console.error("Renderer or canvas not available");
-      return;
-    }
     
-    const canvas = renderRef.current.canvas;
-    const rect = canvas.getBoundingClientRect();
-
-    // Calculate the position relative to the canvas
-    const x = (event.clientX - rect.left) * (canvas.width / rect.width);
-    const y = (event.clientY - rect.top) * (canvas.height / rect.height);
-
-    console.log("Canvas clicked:", { x, y, selectedShape });
-    
-    // Add the shape at the click position
-    addShape(selectedShape, x, y);
-  };
-
-  // Add shape at specific position
-  const addShape = (shapeType, x = dimensions.width / 2, y = dimensions.height / 2) => {
-    if (!engineRef.current) return;
-    
-    const World = Matter.World;
-    const Bodies = Matter.Bodies;
-
-    let shape;
-    switch (shapeType) {
-      case 'circle':
-        shape = Bodies.circle(x, y, 20, {
-          restitution: 0.8,
-          render: { fillStyle: '#4285F4' }
-        });
-        break;
-      case 'square':
-        shape = Bodies.rectangle(x, y, 40, 40, {
-          restitution: 0.6,
-          render: { fillStyle: '#EA4335' }
-        });
-        break;
-      case 'triangle':
-        shape = Bodies.polygon(x, y, 3, 30, {
-          restitution: 0.5,
-          render: { fillStyle: '#FBBC05' }
-        });
-        break;
-      default:
-        console.warn("Unknown shape type:", shapeType);
-        return;
-    }
-
+    const shape = handleCanvasClick(event, renderRef.current, engineRef.current, selectedShape);
     if (shape) {
-      console.log("Adding shape:", shapeType, "at position:", x, y);
-      World.add(engineRef.current.world, [shape]);
       // Add to shapes array for tracking
       shapeRef.current.push(shape);
     }
@@ -213,146 +152,30 @@ const SimulationCanvas = ({
     if (!clickToPlaceMode && (isCreatingCircle || isCreatingRectangle || isCreatingTriangle)) {
       intervalId = setInterval(() => {
         for (let i = 0; i < 5; i++) { // Create 5 shapes per interval
-          if (isCreatingCircle) addShape('circle');
-          if (isCreatingRectangle) addShape('square');
-          if (isCreatingTriangle) addShape('triangle');
+          let shape;
+          if (isCreatingCircle) {
+            shape = createShape('circle', dimensions.width / 2, dimensions.height / 2);
+          } else if (isCreatingRectangle) {
+            shape = createShape('square', dimensions.width / 2, dimensions.height / 2);
+          } else if (isCreatingTriangle) {
+            shape = createShape('triangle', dimensions.width / 2, dimensions.height / 2);
+          }
+          
+          if (shape) {
+            addShape(engineRef.current, shape);
+            shapeRef.current.push(shape);
+          }
         }
       }, 50); // Reduced interval to 50ms for faster creation
     }
     return () => clearInterval(intervalId);
-  }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle, clickToPlaceMode]);
-
-  const addBorderWalls = () => {
-    // Remove any existing walls first
-    removeBorderWalls();
-
-    const World = Matter.World;
-    const Bodies = Matter.Bodies;
-
-    const wallThickness = 20;
-    const wallOptions = { isStatic: true, render: { fillStyle: '#333333' } };
-    
-    // Left wall
-    const leftWall = Bodies.rectangle(
-      -wallThickness / 2,
-      dimensions.height / 2,
-      wallThickness,
-      dimensions.height,
-      wallOptions
-    );
-    
-    // Right wall
-    const rightWall = Bodies.rectangle(
-      dimensions.width + wallThickness / 2,
-      dimensions.height / 2,
-      wallThickness,
-      dimensions.height,
-      wallOptions
-    );
-    
-    // Top wall
-    const topWall = Bodies.rectangle(
-      dimensions.width / 2,
-      -wallThickness / 2,
-      dimensions.width,
-      wallThickness,
-      wallOptions
-    );
-    
-    const walls = [leftWall, rightWall, topWall];
-    World.add(engineRef.current.world, walls);
-    wallsRef.current = walls;
-  };
-
-  const removeBorderWalls = () => {
-    if (wallsRef.current.length > 0 && engineRef.current) {
-      const World = Matter.World;
-      World.remove(engineRef.current.world, wallsRef.current);
-      wallsRef.current = [];
-    }
-  };
-
-  // Function to add border lock walls (sides and bottom only)
-  const addBorderLockWalls = () => {
-    // Remove any existing walls first
-    removeBorderLockWalls();
-
-    const World = Matter.World;
-    const Bodies = Matter.Bodies;
-
-    const wallThickness = 20;
-    const wallOptions = { 
-      isStatic: true, 
-      render: { 
-        // Make walls semi-transparent to indicate they're invisible boundaries
-        fillStyle: 'rgba(150, 150, 150, 0.2)' 
-      } 
-    };
-    
-    // Left wall
-    const leftWall = Bodies.rectangle(
-      -wallThickness / 2,
-      dimensions.height / 2,
-      wallThickness,
-      dimensions.height,
-      wallOptions
-    );
-    
-    // Right wall
-    const rightWall = Bodies.rectangle(
-      dimensions.width + wallThickness / 2,
-      dimensions.height / 2,
-      wallThickness,
-      dimensions.height,
-      wallOptions
-    );
-    
-    // Bottom wall (already exists as ground, but making it wider to ensure coverage)
-    const bottomWall = Bodies.rectangle(
-      dimensions.width / 2,
-      dimensions.height + wallThickness / 2,
-      dimensions.width + wallThickness * 2,
-      wallThickness,
-      wallOptions
-    );
-    
-    const walls = [leftWall, rightWall, bottomWall];
-    World.add(engineRef.current.world, walls);
-    wallsRef.current = walls;
-  };
-
-  const removeBorderLockWalls = () => {
-    if (wallsRef.current.length > 0 && engineRef.current) {
-      const World = Matter.World;
-      World.remove(engineRef.current.world, wallsRef.current);
-      wallsRef.current = [];
-    }
-  };
-
-  const clearAllShapes = () => {
-    const World = Matter.World;
-    
-    // Only remove the shapes, not the walls or ground
-    if (shapeRef.current.length > 0) {
-      World.remove(engineRef.current.world, shapeRef.current);
-      shapeRef.current = []; // Reset the shapes array
-    }
-    
-    // Re-add the current border configuration if needed
-    if (showBorders) {
-      // Ensure borders are still active
-      addBorderWalls();
-    } else if (borderLock) {
-      // Ensure border lock is still active
-      addBorderLockWalls();
-    }
-  };
+  }, [isCreatingCircle, isCreatingRectangle, isCreatingTriangle, clickToPlaceMode, dimensions]);
 
   return (
     <div 
       ref={sceneRef} 
       className="border border-gray-300 rounded-lg overflow-hidden max-w-full" 
-      onClick={handleCanvasClick}
+      onClick={handleCanvasClicking}
       style={{ cursor: clickToPlaceMode && selectedShape ? 'crosshair' : 'default' }}
     />
   );

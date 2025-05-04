@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import SimulationCanvas from './SimulationCanvas';
 import ControlPanel from './ControlPanel';
 import ShapeControls from './ShapeControls';
@@ -12,6 +12,8 @@ const PhysicsSimulator = () => {
   const [borderLock, setBorderLock] = useState(false);
   const [clickToPlaceMode, setClickToPlaceMode] = useState(false);
   const [selectedShape, setSelectedShape] = useState(null); // 'circle', 'square', or 'triangle'
+  
+  const canvasRef = useRef(null);
 
   // Handler for toggling borders
   const toggleBorders = () => {
@@ -66,6 +68,14 @@ const PhysicsSimulator = () => {
     }
   };
 
+  // This is a placeholder that will be passed to the SimulationCanvas
+  const clearAllShapes = () => {
+    // The actual implementation is in the SimulationCanvas component
+    if (canvasRef.current && canvasRef.current.clearAllShapes) {
+      canvasRef.current.clearAllShapes();
+    }
+  };
+
   return (
     <div className="flex flex-col md:flex-row items-start gap-4 w-full">
       <ControlPanel 
@@ -75,6 +85,7 @@ const PhysicsSimulator = () => {
       />
       <div className="flex flex-col items-center w-full">
         <SimulationCanvas 
+          ref={canvasRef}
           isCreatingCircle={isCreatingCircle}
           isCreatingRectangle={isCreatingRectangle}
           isCreatingTriangle={isCreatingTriangle}
@@ -90,7 +101,7 @@ const PhysicsSimulator = () => {
           setIsCreatingCircle={setIsCreatingCircle}
           setIsCreatingRectangle={setIsCreatingRectangle}
           setIsCreatingTriangle={setIsCreatingTriangle}
-          clearAllShapes={() => {}} // This will be implemented in SimulationCanvas
+          clearAllShapes={clearAllShapes}
           toggleBorders={toggleBorders}
           toggleBorderLock={toggleBorderLock}
           showBorders={showBorders}
