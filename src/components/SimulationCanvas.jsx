@@ -73,7 +73,7 @@ const SimulationCanvas = ({
     };
   }, [dimensions, engineRef, groundRef, wallsRef, showBorders, borderLock]);
 
-  // Handle borders based on showBorders state
+  // Handle borders based on showBorders state - preserving existing shapes
   useEffect(() => {
     if (engineRef.current) {
       if (showBorders) {
@@ -92,7 +92,7 @@ const SimulationCanvas = ({
     }
   }, [showBorders, dimensions, engineRef, wallsRef, borderLock]);
 
-  // Handle border lock when borderLock changes
+  // Handle border lock when borderLock changes - preserving existing shapes
   useEffect(() => {
     if (engineRef.current) {
       if (borderLock) {
