@@ -12,7 +12,6 @@ const PhysicsSimulator = () => {
   const [borderLock, setBorderLock] = useState(false);
   const [clickToPlaceMode, setClickToPlaceMode] = useState(false);
   const [selectedShape, setSelectedShape] = useState(null); // 'circle', 'square', or 'triangle'
-  const [isWaterActive, setIsWaterActive] = useState(false);
   
   const canvasRef = useRef(null);
 
@@ -63,18 +62,6 @@ const PhysicsSimulator = () => {
     }
   };
 
-  // Handler for toggling water
-  const handleWaterToggle = () => {
-    setIsWaterActive(prev => !prev);
-    if (canvasRef.current) {
-      if (!isWaterActive) {
-        canvasRef.current.startWater();
-      } else {
-        canvasRef.current.stopWater();
-      }
-    }
-  };
-
   // This is a placeholder that will be passed to the SimulationCanvas
   const clearAllShapes = () => {
     // The actual implementation is in the SimulationCanvas component
@@ -89,8 +76,6 @@ const PhysicsSimulator = () => {
         clickToPlaceMode={clickToPlaceMode}
         setClickToPlaceMode={handleClickToPlaceModeChange}
         selectedShape={selectedShape}
-        onAddWater={handleWaterToggle}
-        isWaterActive={isWaterActive}
       />
       <div className="flex flex-col items-center w-full">
         <SimulationCanvas 
@@ -102,7 +87,6 @@ const PhysicsSimulator = () => {
           borderLock={borderLock}
           clickToPlaceMode={clickToPlaceMode}
           selectedShape={selectedShape}
-          isWaterActive={isWaterActive}
         />
         <ShapeControls 
           handleInteractionStart={handleInteractionStart}

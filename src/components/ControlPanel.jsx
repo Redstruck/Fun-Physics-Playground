@@ -1,16 +1,8 @@
 
 import React from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { Droplet } from "lucide-react";
 
-const ControlPanel = ({ 
-  clickToPlaceMode, 
-  setClickToPlaceMode, 
-  selectedShape,
-  onAddWater,
-  isWaterActive
-}) => {
+const ControlPanel = ({ clickToPlaceMode, setClickToPlaceMode, selectedShape }) => {
   return (
     <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-64 flex flex-col gap-3">
       <h2 className="text-lg font-semibold mb-2">Controls</h2>
@@ -40,17 +32,6 @@ const ControlPanel = ({
           Click on a shape button to select a shape type
         </div>
       )}
-
-      <div className="mt-2">
-        <Button 
-          onClick={onAddWater}
-          variant={isWaterActive ? "secondary" : "default"}
-          className="w-full justify-start"
-        >
-          <Droplet className="h-4 w-4 mr-2" />
-          {isWaterActive ? "Stop Water" : "Add Water"}
-        </Button>
-      </div>
     </div>
   );
 };

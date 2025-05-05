@@ -1,10 +1,8 @@
-
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import Matter from 'matter-js';
 import { createPhysicsEngine, startPhysicsEngine, stopPhysicsEngine, updatePhysicsRendererDimensions } from '../utils/physicsEngine';
 import { createShape, createGround, addShape, clearShapes, handleCanvasClick } from '../utils/shapeUtils';
 import { createBorderWalls, createBorderLockWalls, addWalls, removeWalls } from '../utils/borderUtils';
-import { startWaterEmission, stopWaterEmission, updateWaterPhysics } from '../utils/waterUtils';
 
 const SimulationCanvas = forwardRef(({
   isCreatingCircle,
@@ -13,8 +11,7 @@ const SimulationCanvas = forwardRef(({
   showBorders,
   borderLock,
   clickToPlaceMode,
-  selectedShape,
-  isWaterActive
+  selectedShape
 }, ref) => {
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
@@ -23,7 +20,6 @@ const SimulationCanvas = forwardRef(({
   const wallsRef = useRef([]);
   const groundRef = useRef(null);
   const shapeRef = useRef([]);
-  const waterTimerRef = useRef(null);
   
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -31,17 +27,6 @@ const SimulationCanvas = forwardRef(({
       if (engineRef.current && shapeRef.current.length > 0) {
         clearShapes(engineRef.current, shapeRef.current);
         shapeRef.current = [];
-      }
-    },
-    startWater: () => {
-      if (engineRef.current) {
-        waterTimerRef.current = startWaterEmission(engineRef.current, dimensions.width);
-      }
-    },
-    stopWater: () => {
-      if (engineRef.current) {
-        stopWaterEmission(engineRef.current);
-        waterTimerRef.current = null;
       }
     }
   }));
@@ -95,21 +80,9 @@ const SimulationCanvas = forwardRef(({
       addWalls(engine, walls);
       wallsRef.current = walls;
     }
-    
-    // Set up water physics update
-    const waterUpdateInterval = setInterval(() => {
-      if (engineRef.current && isWaterActive) {
-        updateWaterPhysics(engineRef.current);
-      }
-    }, 16); // ~60fps
 
     // Cleanup
     return () => {
-      clearInterval(waterUpdateInterval);
-      if (waterTimerRef.current) {
-        clearInterval(waterTimerRef.current);
-        waterTimerRef.current = null;
-      }
       stopPhysicsEngine(render, engine);
     };
   }, [dimensions]);
@@ -140,25 +113,6 @@ const SimulationCanvas = forwardRef(({
       }
     }
   }, [showBorders, dimensions]);
-
-  // Effect to handle water activation state
-  useEffect(() => {
-    if (engineRef.current) {
-      if (isWaterActive && !waterTimerRef.current) {
-        waterTimerRef.current = startWaterEmission(engineRef.current, dimensions.width);
-      } else if (!isWaterActive && waterTimerRef.current) {
-        stopWaterEmission(engineRef.current);
-        waterTimerRef.current = null;
-      }
-    }
-    
-    return () => {
-      if (waterTimerRef.current) {
-        clearInterval(waterTimerRef.current);
-        waterTimerRef.current = null;
-      }
-    };
-  }, [isWaterActive, dimensions.width]);
 
   // Effect to handle border lock when borderLock changes
   useEffect(() => {
