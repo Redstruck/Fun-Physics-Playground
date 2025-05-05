@@ -1,8 +1,10 @@
+
 import React, { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import Matter from 'matter-js';
 import { createPhysicsEngine, startPhysicsEngine, stopPhysicsEngine, updatePhysicsRendererDimensions } from '../utils/physicsEngine';
 import { createShape, createGround, addShape, clearShapes, handleCanvasClick } from '../utils/shapeUtils';
 import { createBorderWalls, createBorderLockWalls, addWalls, removeWalls } from '../utils/borderUtils';
+import { createWater, addWater } from '../utils/waterUtils';
 
 const SimulationCanvas = forwardRef(({
   isCreatingCircle,
@@ -11,7 +13,8 @@ const SimulationCanvas = forwardRef(({
   showBorders,
   borderLock,
   clickToPlaceMode,
-  selectedShape
+  selectedShape,
+  addingWater
 }, ref) => {
   const sceneRef = useRef(null);
   const engineRef = useRef(null);
@@ -20,6 +23,7 @@ const SimulationCanvas = forwardRef(({
   const wallsRef = useRef([]);
   const groundRef = useRef(null);
   const shapeRef = useRef([]);
+  const waterRef = useRef(null);
   
   // Expose methods to parent component
   useImperativeHandle(ref, () => ({
@@ -140,6 +144,16 @@ const SimulationCanvas = forwardRef(({
       }
     }
   }, [borderLock, dimensions]);
+  
+  // Effect to handle water creation
+  useEffect(() => {
+    if (addingWater && engineRef.current) {
+      const water = createWater(dimensions.width, dimensions.height);
+      addWater(engineRef.current, water);
+      // Store water reference for potential cleanup later
+      waterRef.current = water;
+    }
+  }, [addingWater, dimensions]);
 
   // Function to handle click-to-place logic
   const handleCanvasClicking = (event) => {

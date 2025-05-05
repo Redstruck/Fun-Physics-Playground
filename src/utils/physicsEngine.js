@@ -5,7 +5,13 @@ export const createPhysicsEngine = (containerRef, dimensions) => {
   const Engine = Matter.Engine;
   const Render = Matter.Render;
   
-  const engine = Engine.create();
+  // Create engine with modified parameters for better fluid simulation
+  const engine = Engine.create({
+    positionIterations: 6,     // Default is 6, higher for more accurate position
+    velocityIterations: 4,     // Default is 4, higher for more accurate velocity
+    constraintIterations: 2,   // Default is 2, higher for more stable constraints (for water)
+    enableSleeping: false,     // Keep bodies active for fluid simulation
+  });
   
   const render = Render.create({
     element: containerRef,
@@ -15,7 +21,10 @@ export const createPhysicsEngine = (containerRef, dimensions) => {
       height: dimensions.height,
       wireframes: false,
       background: '#f4f4f4',
-      pixelRatio: window.devicePixelRatio
+      pixelRatio: window.devicePixelRatio,
+      showAngleIndicator: false,  // Hide angle indicators for cleaner look
+      showCollisions: false,      // Hide collision points
+      showVelocity: false,        // Hide velocity indicators
     }
   });
   

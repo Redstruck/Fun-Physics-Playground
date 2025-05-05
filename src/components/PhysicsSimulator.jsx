@@ -12,6 +12,7 @@ const PhysicsSimulator = () => {
   const [borderLock, setBorderLock] = useState(false);
   const [clickToPlaceMode, setClickToPlaceMode] = useState(false);
   const [selectedShape, setSelectedShape] = useState(null); // 'circle', 'square', or 'triangle'
+  const [addingWater, setAddingWater] = useState(false);
   
   const canvasRef = useRef(null);
 
@@ -70,12 +71,22 @@ const PhysicsSimulator = () => {
     }
   };
 
+  // Handle adding water
+  const handleAddWater = () => {
+    setAddingWater(true);
+    // Use setTimeout to reset the flag after the water is added
+    setTimeout(() => {
+      setAddingWater(false);
+    }, 100);
+  };
+
   return (
     <div className="flex flex-col md:flex-row items-start gap-4 w-full">
       <ControlPanel 
         clickToPlaceMode={clickToPlaceMode}
         setClickToPlaceMode={handleClickToPlaceModeChange}
         selectedShape={selectedShape}
+        onAddWater={handleAddWater}
       />
       <div className="flex flex-col items-center w-full">
         <SimulationCanvas 
@@ -87,6 +98,7 @@ const PhysicsSimulator = () => {
           borderLock={borderLock}
           clickToPlaceMode={clickToPlaceMode}
           selectedShape={selectedShape}
+          addingWater={addingWater}
         />
         <ShapeControls 
           handleInteractionStart={handleInteractionStart}
