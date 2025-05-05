@@ -33,14 +33,30 @@ const ShapeControls = ({
     handleShapeButtonClick(shapeType);
   };
 
+  // New handler specifically for touch selection in Click-to-Place mode
+  const handleTouchSelection = (e, shapeType) => {
+    e.preventDefault();
+    handleShapeButtonClick(shapeType);
+  };
+
   return (
     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 w-full max-w-[800px]">
       <Button
         onMouseDown={() => handleInteractionStart(setIsCreatingCircle)}
         onMouseUp={() => handleInteractionEnd(setIsCreatingCircle)}
         onMouseLeave={() => handleInteractionEnd(setIsCreatingCircle)}
-        onTouchStart={(e) => handleTouchStart(e, setIsCreatingCircle)}
-        onTouchEnd={(e) => handleTouchEnd(e, setIsCreatingCircle)}
+        onTouchStart={(e) => {
+          if (clickToPlaceMode) {
+            handleTouchSelection(e, 'circle');
+          } else {
+            handleTouchStart(e, setIsCreatingCircle);
+          }
+        }}
+        onTouchEnd={(e) => {
+          if (!clickToPlaceMode) {
+            handleTouchEnd(e, setIsCreatingCircle);
+          }
+        }}
         onClick={(e) => handleButtonClick(e, 'circle')}
         className={`w-full ${selectedShape === 'circle' && clickToPlaceMode ? 'bg-primary/70' : ''}`}
       >
@@ -51,8 +67,18 @@ const ShapeControls = ({
         onMouseDown={() => handleInteractionStart(setIsCreatingRectangle)}
         onMouseUp={() => handleInteractionEnd(setIsCreatingRectangle)}
         onMouseLeave={() => handleInteractionEnd(setIsCreatingRectangle)}
-        onTouchStart={(e) => handleTouchStart(e, setIsCreatingRectangle)}
-        onTouchEnd={(e) => handleTouchEnd(e, setIsCreatingRectangle)}
+        onTouchStart={(e) => {
+          if (clickToPlaceMode) {
+            handleTouchSelection(e, 'square');
+          } else {
+            handleTouchStart(e, setIsCreatingRectangle);
+          }
+        }}
+        onTouchEnd={(e) => {
+          if (!clickToPlaceMode) {
+            handleTouchEnd(e, setIsCreatingRectangle);
+          }
+        }}
         onClick={(e) => handleButtonClick(e, 'square')}
         className={`w-full ${selectedShape === 'square' && clickToPlaceMode ? 'bg-primary/70' : ''}`}
       >
@@ -63,8 +89,18 @@ const ShapeControls = ({
         onMouseDown={() => handleInteractionStart(setIsCreatingTriangle)}
         onMouseUp={() => handleInteractionEnd(setIsCreatingTriangle)}
         onMouseLeave={() => handleInteractionEnd(setIsCreatingTriangle)}
-        onTouchStart={(e) => handleTouchStart(e, setIsCreatingTriangle)}
-        onTouchEnd={(e) => handleTouchEnd(e, setIsCreatingTriangle)}
+        onTouchStart={(e) => {
+          if (clickToPlaceMode) {
+            handleTouchSelection(e, 'triangle');
+          } else {
+            handleTouchStart(e, setIsCreatingTriangle);
+          }
+        }}
+        onTouchEnd={(e) => {
+          if (!clickToPlaceMode) {
+            handleTouchEnd(e, setIsCreatingTriangle);
+          }
+        }}
         onClick={(e) => handleButtonClick(e, 'triangle')}
         className={`w-full ${selectedShape === 'triangle' && clickToPlaceMode ? 'bg-primary/70' : ''}`}
       >
