@@ -5,7 +5,13 @@ export const createPhysicsEngine = (containerRef, dimensions) => {
   const Engine = Matter.Engine;
   const Render = Matter.Render;
   
-  const engine = Engine.create();
+  // Create engine with improved solver for fluid simulation
+  const engine = Engine.create({
+    positionIterations: 6,
+    velocityIterations: 4,
+    constraintIterations: 2,
+    enableSleeping: false
+  });
   
   const render = Render.create({
     element: containerRef,
@@ -15,9 +21,18 @@ export const createPhysicsEngine = (containerRef, dimensions) => {
       height: dimensions.height,
       wireframes: false,
       background: '#f4f4f4',
-      pixelRatio: window.devicePixelRatio
+      pixelRatio: window.devicePixelRatio,
+      showSleeping: false,
+      showDebug: false,
+      showBroadphase: false,
+      showBounds: false,
+      showVelocity: false,
+      showCollisions: false
     }
   });
+  
+  // Set gravity
+  engine.world.gravity.y = 0.98;
   
   return { engine, render };
 };
