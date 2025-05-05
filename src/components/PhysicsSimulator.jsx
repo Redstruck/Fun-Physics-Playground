@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import SimulationCanvas from './SimulationCanvas';
 import ControlPanel from './ControlPanel';
@@ -21,15 +20,6 @@ const PhysicsSimulator = () => {
     if (!showBorders && borderLock) {
       // Turn off border lock if enabling regular borders
       setBorderLock(false);
-    }
-  };
-
-  // Handler for toggling border lock
-  const toggleBorderLock = () => {
-    setBorderLock(prevState => !prevState);
-    if (!borderLock && showBorders) {
-      // Turn off regular borders if enabling border lock
-      setShowBorders(false);
     }
   };
 
@@ -65,6 +55,9 @@ const PhysicsSimulator = () => {
     if (!enabled) {
       // Clear selected shape when disabling click-to-place mode
       setSelectedShape(null);
+    } else if (selectedShape === null) {
+      // Set a default shape when enabling click-to-place mode if none selected
+      setSelectedShape('circle');
     }
   };
 
@@ -103,9 +96,7 @@ const PhysicsSimulator = () => {
           setIsCreatingTriangle={setIsCreatingTriangle}
           clearAllShapes={clearAllShapes}
           toggleBorders={toggleBorders}
-          toggleBorderLock={toggleBorderLock}
           showBorders={showBorders}
-          borderLock={borderLock}
           clickToPlaceMode={clickToPlaceMode}
           selectedShape={selectedShape}
         />
