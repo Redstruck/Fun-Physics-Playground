@@ -1,10 +1,8 @@
 
 import React from 'react';
 import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { Waves } from "lucide-react";
 
-const ControlPanel = ({ clickToPlaceMode, setClickToPlaceMode, selectedShape, onAddWater }) => {
+const ControlPanel = ({ clickToPlaceMode, setClickToPlaceMode, selectedShape }) => {
   return (
     <div className="bg-white p-4 rounded-lg shadow-md w-full md:w-64 flex flex-col gap-3">
       <h2 className="text-lg font-semibold mb-2">Controls</h2>
@@ -34,14 +32,6 @@ const ControlPanel = ({ clickToPlaceMode, setClickToPlaceMode, selectedShape, on
           Click on a shape button to select a shape type
         </div>
       )}
-
-      <Button 
-        onClick={onAddWater}
-        className="w-full mt-2 bg-cyan-600 hover:bg-cyan-700"
-      >
-        <Waves className="h-4 w-4 mr-2" />
-        Add Water
-      </Button>
     </div>
   );
 };
