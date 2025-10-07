@@ -183,7 +183,7 @@ const SimulationCanvas = forwardRef(({
   return (
     <div 
       ref={sceneRef} 
-      className="border border-gray-300 rounded-lg overflow-hidden max-w-full" 
+      className="border-2 border-border rounded-xl overflow-hidden max-w-full shadow-lg hover:shadow-xl transition-shadow duration-300 bg-card" 
       onClick={handleCanvasClicking}
       style={{ cursor: clickToPlaceMode && selectedShape ? 'crosshair' : 'default' }}
     />
