@@ -61,7 +61,7 @@ The app is organized around a small simulation surface and supporting controls:
 
 ```bash
 git clone <your-repo-url>
-cd Fun-Physics-Playground-1
+cd Fun-Physics-Playground
 npm install
 npm run dev
 ```
