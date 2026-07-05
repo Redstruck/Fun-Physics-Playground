@@ -3,7 +3,7 @@
 A browser-based physics sandbox built with React and Vite.
 Designed as a hands-on playground for experimenting with gravity, shape spawning, and interactive simulations.
 
-🔗 **Live Demo:** https://fun-physics-playground.netlify.app/
+🔗 **Live Demo:** https://fun-physics-playground.vercel.app/
 
 ---
 
